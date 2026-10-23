@@ -1,0 +1,16 @@
+.DS_Store
+/data/
+/dist/
+/短剧下载/
+/config.json
+/juku-settings.json
+/settings.json
+/library.json
+/ui-state.json
+/failed.json
+/juku
+/juku.exe
+/bin/ffmpeg
+/bin/ffmpeg.exe
+/bin/ffprobe
+/bin/ffprobe.exe

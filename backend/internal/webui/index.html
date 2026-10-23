@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f4f8">
+<title>短剧库</title>
+<script src="/assets/theme.js"></script>
+<link rel="stylesheet" href="/assets/app.css">
+<link rel="stylesheet" href="/assets/library.css">
+<link rel="stylesheet" href="/assets/downloads.css">
+<link rel="stylesheet" href="/assets/player.css">
+<link rel="stylesheet" href="/assets/library-tools.css">
+<link rel="stylesheet" href="/assets/history.css">
+</head>
+<body>
+<a class="skip-link" href="#workspaceMain">跳到主要内容</a>
+<header class="app-header">
+  <a class="brand" href="#library" aria-label="短剧库首页"><span class="brand-mark" aria-hidden="true"><span data-icon="brand"></span></span><span class="brand-name">短剧库</span></a>
+  <nav class="desktop-nav" aria-label="主导航">
+    <button class="nav-button" data-page="library" aria-current="page"><span data-icon="library"></span>剧库</button>
+    <button class="nav-button" data-page="following"><span data-icon="bookmark"></span>追剧<span class="nav-count" data-follow-count hidden></span></button>
+    <button class="nav-button" data-page="downloads"><span data-icon="download"></span>下载<span class="nav-count" data-download-count hidden></span></button>
+  </nav>
+  <div class="header-actions">
+    <button id="refreshBtn" class="secondary"><span class="button-content"><span data-icon="refresh"></span><span id="refreshBtnLabel">更新剧库</span></span></button>
+    <button id="openAccountBtn" class="quiet" aria-label="登录或注册账号" aria-haspopup="dialog" aria-controls="accountPanel"><span data-icon="user"></span><span id="accountLabel" class="account-label">登录</span></button>
+    <details id="headerMenu" class="action-menu header-menu"><summary id="moreButton" aria-label="更多" aria-expanded="false" aria-controls="morePanel"><span data-icon="more"></span></summary><div id="morePanel" class="action-popover menu-list"><button id="menuUsersBtn" data-page="users" data-admin-only hidden><span data-icon="user"></span>用户管理<span data-icon="right"></span></button><button id="openSettingsBtn"><span data-icon="settings"></span>代理 / 设置<span data-icon="right"></span></button><button id="menuHistoryBtn"><span data-icon="clock"></span>历史记录<span data-icon="right"></span></button><button id="sourceStatusBtn"><span data-icon="activity"></span>站源状态<span data-icon="right"></span></button><button id="aboutBtn"><span data-icon="help"></span>使用提示<span data-icon="right"></span></button><span id="libraryMenuUpdatedAt" class="small"></span></div></details>
+  </div>
+</header>
+<div id="viewerNotice" class="viewer-notice" role="status" hidden></div>
+<main class="workspace" id="workspaceMain" tabindex="-1">
+  <section class="page-view" id="libraryPage" data-view="library" aria-label="剧库">
+    <div class="library-toolbar">
+      <div class="library-search" id="librarySearch">
+        <div class="search-field"><span data-icon="search"></span><input id="searchInput" type="search" maxlength="80" autocomplete="off" placeholder="搜索剧名、简介或标签" aria-label="搜索剧库"><button id="clearSearchBtn" class="quiet icon-button" aria-label="清空搜索" hidden><span data-icon="close"></span></button></div>
+        <button id="onlineSearchBtn" class="subtle">联网搜索</button>
+      </div>
+      <div id="recommendToolbar" class="recommend-toolbar" hidden><label class="catalog-select"><select id="recommendGenre" aria-label="红果推荐分类"><option value="short_play">真人剧</option><option value="comic_series">漫剧</option><option value="ai_series">AI 剧</option></select><span data-icon="chevron"></span></label><span class="small">分类推荐 · 无需登录</span><button id="recommendRefreshBtn" class="quiet button-content" title="从当前分类重新获取推荐，结果可能相同"><span data-icon="refresh"></span>重新获取</button></div>
+      <div class="catalog-controls" id="libraryFilters" role="group" aria-label="筛选与排序">
+        <label class="catalog-select"><select id="sourceSelect" aria-label="站源筛选"><option value="">全部站源</option></select><span data-icon="chevron"></span></label>
+        <label class="catalog-select"><select id="channelSelect" aria-label="分类筛选"><option value="">全部分类</option></select><span data-icon="chevron"></span></label>
+        <label class="catalog-select"><select id="sortSelect" aria-label="剧库排序"><option value="default">默认排序</option><option value="newest">最新上线</option><option value="oldest">最早上线</option><option value="heat">热度最高</option><option value="views">播放最多</option><option value="title">名称排序</option></select><span data-icon="chevron"></span></label>
+        <button id="vipFilterBtn" class="quiet catalog-action vip-filter" data-vip-filter aria-pressed="false" hidden>隐藏 VIP</button>
+        <button id="openRankingsBtn" class="quiet catalog-action" aria-label="站点榜单" title="站点榜单" aria-haspopup="dialog" aria-controls="rankingPanel"><span class="button-content"><span data-icon="chart"></span><span class="control-label">榜单</span></span></button><button id="batchSelectBtn" data-download-only class="quiet catalog-action" aria-label="批量选择" title="批量选择" aria-pressed="false"><span class="button-content"><span data-icon="select"></span><span id="batchSelectLabel" class="control-label">批量选择</span></span></button>
+      </div>
+    </div>
+    <div class="recent-searches" id="recentSearches" hidden aria-label="最近搜索"></div>
+    <div id="libraryFeedback" class="library-feedback" hidden><span id="libraryStatus" class="small" role="status" aria-live="polite"></span><button id="retryLibraryBtn" class="quiet" hidden>重试读取</button></div>
+    <div class="catalog-layout" id="catalogLayout">
+      <div class="catalog-content">
+        <div class="section-heading catalog-heading"><div class="library-view-switch" role="group" aria-label="浏览内容"><button id="libraryModeBtn" class="quiet" aria-pressed="true">剧库</button><button id="recommendModeBtn" class="quiet" aria-pressed="false">红果推荐</button><span id="dramaCount" class="small" role="status"></span></div><section id="continueSection" class="continue-section" aria-labelledby="continueTitle" hidden>
+      <div class="section-heading"><h2 id="continueTitle">继续观看</h2><button class="quiet" data-go="following" aria-label="查看全部在看的剧集"><span data-icon="right"></span></button></div>
+      <div id="continueList" class="continue-list"></div>
+    </section><div class="row"><span id="libraryUpdatedAt" class="small library-updated"></span><button id="resetFiltersBtn" class="quiet" hidden>重置</button><button id="activityToggle" data-download-only class="quiet activity-toggle" aria-pressed="false"><span class="button-content"><span data-icon="sidebar"></span><span id="activityToggleLabel">任务侧栏</span></span></button></div></div>
+        <div id="libraryScroll"><div id="cards" class="cards" aria-label="剧集列表" aria-busy="true"></div></div>
+        <div id="recommendFooter" class="recommend-footer" hidden><span id="recommendStatus" class="small" role="status" aria-live="polite"></span><button id="recommendMoreBtn" class="secondary">继续推荐</button></div>
+        <div id="libraryBatchBar" data-download-only class="batch-bar" hidden><span id="dramaSelection" class="small"></span><span class="spacer"></span><div class="batch-range" role="group" aria-label="选择范围"><button id="selectVisibleBtn" class="quiet" title="全选筛选结果">全选</button><button id="invertVisibleBtn" class="quiet" title="反选筛选结果">反选</button><button id="deselectDramasBtn" class="quiet">取消勾选</button></div><label class="download-quality" data-download-only>画质<select data-download-quality aria-label="批量下载清晰度"></select></label><button id="enqueueBtn">加入下载</button><button id="finishBatchBtn" class="secondary">完成</button></div>
+      </div>
+      <aside id="activityPanel" data-download-only class="activity-panel" aria-label="下载概览" hidden><div class="section-heading"><h2>下载概览</h2><button id="closeActivityBtn" class="quiet icon-button" aria-label="收起下载概览"><span data-icon="close"></span></button></div><div id="activityTasks"></div><button class="quiet" data-go="downloads">打开下载管理 ›</button></aside>
+    </div>
+  </section>
+  <section class="page-view" id="followingPage" data-view="following" aria-label="我的追剧" hidden>
+    <div class="page-heading"><div><h1>我的追剧</h1><p>留住想看的，接着上次看。</p></div><button id="openHistoryBtn" class="secondary button-content" aria-label="完整观看记录" aria-haspopup="dialog" aria-controls="historyPanel"><span data-icon="clock"></span>历史记录</button></div>
+    <div class="following-toolbar"><div class="segments" role="group" aria-label="追剧分组"><button data-follow-tab="watching" aria-pressed="true">在看 <span id="watchingCount">0</span></button><button data-follow-tab="saved" aria-pressed="false">想看 <span id="savedCount">0</span></button><button data-follow-tab="completed" aria-pressed="false">已看 <span id="completedCount">0</span></button></div><input id="followingSearch" type="search" maxlength="80" aria-label="搜索追剧清单" placeholder="搜索我的追剧"></div>
+    <div id="followingError" class="error notice" role="status"></div><button id="retryFollowingBtn" class="secondary" hidden>重新读取追剧清单</button>
+    <div id="followingList" class="following-list" aria-live="polite"></div>
+    <p class="page-footnote">新集提示来自已更新的剧库资料。完整播放记录仍保留在“历史记录”。</p>
+  </section>
+  <section class="page-view" id="downloadsPage" data-view="downloads" aria-label="下载管理" hidden>
+    <div class="page-heading"><div><h1>下载管理 <span id="taskCount" class="small"></span></h1><p>文件保存在运行短剧库的电脑。</p></div><button id="downloadLocationBtn" class="quiet button-content" aria-label="更改下载保存位置"><span data-icon="settings"></span>更改目录</button></div>
+    <div class="download-destination"><span data-icon="folder"></span><span class="small">保存至</span><span id="downloadLocation" class="download-path">正在读取保存目录…</span></div>
+    <div class="download-summary"><div class="summary-tile"><strong id="downloadActiveCount">0</strong><span>正在进行</span></div><div class="summary-tile"><strong id="downloadCompleteCount">0</strong><span>已完成分集</span></div><div class="summary-tile"><strong id="downloadWrittenBytes">0 B</strong><span>任务累计写入</span></div></div>
+    <div class="download-filters"><input id="taskSearch" type="search" placeholder="搜索下载合集" aria-label="搜索下载合集"><select id="taskStatus" aria-label="下载状态"><option value="">全部状态</option><option value="completed">已完成</option><option value="failed">失败</option><option value="unfinished">未完成</option><option value="running">进行中</option><option value="paused">已暂停</option><option value="canceled">已取消</option></select><select id="releaseStatus" aria-label="剧集完结状态"><option value="">全部完结状态</option><option value="finished">完结</option><option value="ongoing">未完结</option><option value="unknown">状态未知</option></select></div>
+    <div class="download-selection toolbar"><label class="download-quality" data-download-only>新任务画质<select id="downloadQuality" data-download-quality aria-label="新任务下载清晰度"></select></label><button id="downloadBatchBtn" class="secondary" aria-pressed="false">批量管理</button><div id="downloadBatchControls" class="toolbar" hidden><button id="selectGroupsBtn" class="secondary">全选</button><button id="invertGroupsBtn" class="secondary">反选</button><button id="deselectGroupsBtn" class="secondary">取消勾选</button><details id="batchMenu" class="action-menu"><summary>批量操作</summary><div class="action-popover"><button id="pauseSelectedBtn" class="secondary">暂停所选</button><button id="resumeSelectedBtn" class="secondary">继续所选</button><button id="cancelSelectedBtn" class="secondary">取消所选下载</button><button id="retrySelectedBtn" class="secondary">重试失败 / 取消</button><button id="updateSelectedBtn" class="secondary">更新所选合集</button><button id="mergeSelectedBtn">合并所选合集</button><label><input id="deleteEpisodesAfterMerge" type="checkbox"> 合并成功后删除分集文件</label><button id="clearTasksBtn" class="danger">清理任务记录</button></div></details><span id="taskSelection" class="small"></span></div></div>
+    <div id="taskError" class="error notice" role="status"></div><div id="ffmpegNotice" class="small notice" role="status" aria-live="polite" hidden></div>
+    <div id="taskScroll"><div id="groups" class="groups"></div></div>
+    <p class="page-footnote">清理任务记录会保留视频。暂停保留已完成分集，未完成的分集继续时重新下载。</p>
+  </section>
+  <section class="page-view users-page" id="usersPage" data-view="users" aria-label="用户管理" hidden>
+    <div class="page-heading"><div><h1>用户管理</h1><p>管理访问方式、账号和各账号的使用权限。</p></div><button id="adminRefreshBtn" class="secondary button-content"><span data-icon="refresh"></span>刷新</button></div>
+    <div id="adminPanel">
+      <div class="users-settings-grid">
+        <section class="admin-card" aria-labelledby="adminPolicyTitle"><h2 id="adminPolicyTitle">访问设置</h2>
+          <form id="adminPolicyForm" class="account-form">
+            <label class="account-check"><input id="adminRequireLogin" type="checkbox"><span>必须登录才能使用剧库<small>关闭时允许匿名观看，记录仍各自独立。</small></span></label>
+            <label class="account-check"><input id="adminAllowRegistration" type="checkbox" checked><span>允许用户自行注册<small>关闭时，仅管理员可以创建账号。</small></span></label>
+            <button id="adminSavePolicyBtn" class="secondary" type="submit" disabled>保存访问设置</button>
+          </form>
+          <p class="small admin-access-hint">匿名访客和自行注册的账号默认可用全部站源及下载功能。需要按账号控制权限时，开启必须登录并关闭自行注册。</p>
+        </section>
+        <section class="admin-card" aria-labelledby="adminCreateTitle"><h2 id="adminCreateTitle">创建用户</h2>
+          <form id="adminCreateUserForm" class="account-form">
+            <label>用户名<input id="adminNewUsername" type="text" minlength="2" maxlength="32" autocomplete="off" autocapitalize="none" required></label>
+            <label>初始密码<input id="adminNewUserPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password" required placeholder="10–128 个字符"></label>
+            <fieldset class="account-source-fieldset"><legend>可用站源</legend><div id="adminNewUserSources" class="account-source-choices"></div></fieldset>
+            <label class="account-check"><input id="adminNewOnlineOnly" type="checkbox"><span>仅在线观看<small>隐藏下载入口，禁止下载、任务管理和 Emby 导出。</small></span></label>
+            <button id="adminCreateUserBtn" class="secondary" type="submit">创建用户</button>
+          </form>
+        </section>
+      </div>
+      <p id="adminStatus" class="small account-status" role="status" aria-live="polite"></p>
+      <section class="admin-card admin-users-card" aria-labelledby="adminAccountsTitle"><div class="admin-list-heading"><h2 id="adminAccountsTitle">已有用户 <span id="adminAccountCount" class="small"></span></h2><input id="adminAccountSearch" type="search" maxlength="32" placeholder="搜索用户名" aria-label="搜索用户"></div><ul id="adminAccountList" class="admin-account-list" aria-label="已注册账号"></ul><p id="adminAccountEmpty" class="small" hidden>没有匹配的账号。</p></section>
+    </div>
+  </section>
+</main>
+<nav class="mobile-nav" aria-label="手机主导航">
+  <button class="nav-button" data-page="library" aria-current="page"><span data-icon="library"></span><span>剧库</span></button>
+  <button class="nav-button" data-page="following"><span data-icon="bookmark"></span><span>追剧</span><span class="nav-count" data-follow-count hidden></span></button>
+  <button class="nav-button" data-page="downloads"><span data-icon="download"></span><span>下载</span><span class="nav-count" data-download-count hidden></span></button>
+</nav>
+<dialog id="detailPanel" class="detail-dialog" aria-labelledby="detailTitle"><div class="dialog-heading"><h2>剧集详情</h2><button class="quiet icon-button" data-close aria-label="关闭详情"><span data-icon="close"></span></button></div><div class="dialog-body" id="detailContent"></div></dialog>
+
+<dialog id="infoPanel" aria-labelledby="infoTitle"><div class="dialog-heading"><h2 id="infoTitle">信息</h2><button class="quiet icon-button" data-close aria-label="关闭信息"><span data-icon="close"></span></button></div><div class="dialog-body" id="infoContent"></div></dialog>
+  <dialog id="rankingPanel" class="ranking-dialog" aria-labelledby="rankingTitle">
+    <div class="ranking-header">
+      <div class="heading"><h2 id="rankingTitle">站点榜单</h2><div class="ranking-heading-actions"><button id="refreshRankingBtn" class="secondary">刷新</button><button id="closeRankingsBtn" class="secondary" aria-label="关闭榜单">关闭</button></div></div>
+      <div class="ranking-controls"><select id="rankingSource" aria-label="榜单站源"></select><button id="rankingVipFilterBtn" class="quiet vip-filter" data-vip-filter aria-pressed="false" hidden>隐藏 VIP</button><label class="download-quality" data-download-only>下载画质<select data-download-quality aria-label="榜单下载清晰度"></select></label><div id="rankingTabs" class="ranking-tabs" role="tablist" aria-label="榜单类型"></div></div>
+      <p id="rankingSummary" class="ranking-summary" aria-live="polite">按站点名次展示，独立于剧库筛选。</p>
+    </div>
+    <div id="rankingContent" class="ranking-content" role="tabpanel" tabindex="0" aria-label="榜单列表" aria-busy="false"><ol id="rankingList" class="ranking-list"></ol></div>
+    <div class="ranking-footer">
+      <div class="ranking-footer-row"><span id="rankingFetchedAt" class="small" role="status" aria-live="polite"></span><button id="rankingMoreBtn" class="secondary" hidden>加载更多</button></div>
+      <p id="rankingError" class="error ranking-error" role="alert"></p><p id="rankingActionStatus" class="ranking-action-status" role="status" aria-live="polite"></p>
+    </div>
+  </dialog>
+  <dialog id="historyPanel" class="history-dialog" aria-labelledby="historyTitle">
+    <div class="history-header">
+      <div class="heading"><h2 id="historyTitle">观看记录 <span id="historyCount" class="small"></span></h2><div class="history-heading-actions"><button id="clearHistoryBtn" class="secondary" disabled>清空</button><button id="closeHistoryBtn" class="secondary" aria-label="关闭观看记录">关闭</button></div></div>
+      <input id="historySearch" type="search" maxlength="80" placeholder="搜索本浏览器的观看记录" aria-label="搜索本浏览器的观看记录">
+      <div id="historyError" class="error" role="status" aria-live="polite"></div>
+    </div>
+    <div id="historyContent" class="history-content" tabindex="0" aria-label="观看记录列表" aria-busy="false"><ol id="historyList" class="history-list"></ol></div>
+    <div class="history-footer"><span id="historySummary" class="small"></span><button id="retryHistoryBtn" class="secondary" hidden>重试</button></div>
+  </dialog>
+  <dialog id="settingsPanel" class="settings-dialog" aria-labelledby="settingsTitle">
+    <div class="heading"><h2 id="settingsTitle">剧库设置</h2><button id="closeSettingsBtn" class="secondary" aria-label="关闭设置">关闭</button></div>
+    <div class="settings-body"><div class="appearance-row"><div><h3>外观</h3><p class="small">选择适合当前环境的明暗模式</p></div><select id="themeSelect" aria-label="外观"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></div>
+      <p id="serverSettingsNotice" class="small">登录管理员账号后可调整代理、保存目录与服务并发。</p><div id="serverSettings" hidden><div class="directory-input"><label class="small">下载目录<input id="downloadDirectory" type="text" placeholder="./短剧下载" autocomplete="off"></label><button id="browseDirectoryBtn" class="secondary">选择文件夹</button></div>
+      <p class="small" id="downloadDirectoryHint">点击按钮打开本机系统文件夹选择框，也可输入相对/绝对路径。重启后新合集使用新目录，原任务和文件保留。</p>
+      <div class="settings-grid">
+        <label>下载并发<input id="downloadConcurrency" type="number" min="1" max="32" value="2"></label>
+        <label>剧库请求并发<input id="requestConcurrency" type="number" min="1" max="16" value="2"></label>
+        <label>同站间隔（毫秒）<input id="requestInterval" type="number" min="100" max="60000" step="100" value="500"></label>
+        <label>代理模式<select id="proxyMode"><option value="auto">自动（环境变量 / 系统代理）</option><option value="direct">直连（不使用代理）</option><option value="manual">自定义代理</option></select></label>
+        <label class="wide">代理地址<input id="proxyURL" type="url" placeholder="http://127.0.0.1:7897 或 socks5://127.0.0.1:1080" autocomplete="off"></label>
+        <label>用户名（可选）<input id="proxyUsername" type="text" autocomplete="off"></label>
+        <label>密码（可选）<input id="proxyPassword" type="password" autocomplete="new-password"></label>
+      </div>
+      <h3>播放与 Emby</h3>
+      <div class="settings-grid">
+        <label>优先原始 MP4/HLS<select id="playbackOriginalEnabled"><option value="1">开启</option><option value="0">关闭（始终转码）</option></select></label>
+        <label>直连站源<input id="playbackDirectSources" type="text" placeholder="hongguo" autocomplete="off"></label>
+        <label>最大播放会话<input id="playbackMaxSessions" type="number" min="1" max="16" value="4"></label>
+        <label>播放缓存（MB）<input id="playbackCacheMB" type="number" min="64" max="8192" value="512"></label>
+        <label>后台播放<select id="playbackBackground"><option value="1">允许</option><option value="0">禁止</option></select></label>
+        <label>下载按站源分目录<select id="playbackGroupBySource"><option value="0">否</option><option value="1">是</option></select></label>
+        <label>Emby 服务地址<input id="embyBaseURL" type="url" placeholder="http://127.0.0.1:8096" autocomplete="off"></label>
+        <label>Emby API Key<input id="embyAPIKey" type="password" autocomplete="new-password" placeholder="留空则不通知扫描"></label>
+        <label>下载后自动同步 Emby<select id="embyAutoSync"><option value="0">否</option><option value="1">是</option></select></label>
+      </div>
+      <div class="toolbar"><button id="saveSettingsBtn">保存并应用</button><button id="savePlaybackSettingsBtn" class="secondary">保存播放设置</button><button id="checkNetworkBtn" class="secondary">检测当前连接</button><button id="embySyncBtn" class="secondary">同步 Emby</button><span id="settingsStatus" class="small" aria-live="polite"></span></div>
+      <div class="small">保存后自动持久化。降低并发不终止正在下载的任务；代理变更用于后续连接，失败任务可重试。同一站源的剧库请求顺序执行，下载与剧库请求使用独立并发。</div>
+    </div>
+    </div><section class="viewer-settings" aria-labelledby="viewerSettingsTitle">
+      <h3 id="viewerSettingsTitle">个人记录 <span class="small" id="viewerIdentityLabel">当前浏览器</span></h3>
+      <p class="small" id="viewerRecordsHint">登录后可跨设备接着看，观看记录和追剧清单各自独立。</p><button class="quiet" data-account-open>打开我的账号</button>
+      <div id="legacyImportSection" hidden>
+        <div class="viewer-import-row"><label class="small">旧版记录恢复码<input id="legacyImportCode" type="password" maxlength="64" autocomplete="off" placeholder="粘贴一次性恢复码"></label><button id="legacyImportBtn" class="secondary">接回旧记录</button></div>
+        <p class="small">恢复码在服务所在电脑的 data/viewer-legacy-code 文件中。旧版记录接入当前登录账号；未登录时接回当前浏览器。</p>
+      </div>
+      <p id="viewerImportStatus" class="small" role="status" aria-live="polite"></p>
+    </section>
+    <div class="statusbar" id="configText"></div>
+    <div class="small notice" id="ffmpegSettingsStatus" role="status"></div>
+  </dialog>
+<dialog id="accountPanel" class="account-dialog" aria-labelledby="accountTitle">
+  <div class="dialog-heading"><h2 id="accountTitle">我的账号</h2><button class="quiet icon-button" data-close aria-label="关闭账号"><span data-icon="close"></span></button></div>
+  <div class="dialog-body">
+    <div id="accountGuest">
+      <p class="account-intro">登录后，换设备也能接着看。</p>
+      <div class="account-tabs segments" role="group" aria-label="账号操作"><button data-account-mode="login" aria-pressed="true">登录</button><button data-account-mode="register" aria-pressed="false">注册</button></div>
+      <p id="accountRegistrationDisabled" class="small" hidden>注册已关闭，请联系管理员创建账号。</p>
+      <form id="accountForm" class="account-form">
+        <label>用户名<input id="accountUsername" name="username" type="text" minlength="2" maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="中文、字母、数字均可"></label>
+        <label>密码<input id="accountPassword" name="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required placeholder="10–128 个字符"></label>
+        <label id="accountConfirmRow" hidden>确认密码<input id="accountPasswordConfirm" type="password" minlength="10" maxlength="128" autocomplete="new-password"></label>
+        <label id="accountImportOnRegisterRow" class="account-check" hidden><input id="accountImportOnRegister" type="checkbox" checked><span>把此浏览器原有记录接入新账号</span></label>
+        <button id="accountSubmitBtn" type="submit">登录</button>
+      </form>
+      <p class="small account-note">这是当前剧库服务的账号，观看进度和追剧清单各自独立。</p>
+    </div>
+    <div id="accountMember" hidden>
+      <div class="account-member-heading"><div><span class="small">已登录</span><strong id="accountName"></strong></div><button id="accountLogoutBtn" class="secondary">退出登录</button></div>
+      <p class="small">在其他设备打开同一剧库，登录此账号即可继续观看。</p>
+      <div id="accountGuestImportSection" class="account-import" hidden><p class="small">此浏览器还有未接入账号的旧记录。接回时保留账号已有记录。</p><button id="accountImportGuestBtn" class="secondary">接回此浏览器原有记录</button></div>
+      <p id="accountForcedPasswordHint" class="account-initial-note" hidden>请先修改服务启动时生成的随机初始密码，再使用剧库。</p>
+      <details id="accountPasswordDetails" class="account-password"><summary>修改密码</summary><form id="accountPasswordForm" class="account-form">
+        <label>当前密码<input id="accountCurrentPassword" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
+        <label>新密码<input id="accountNewPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password" required></label>
+        <label>确认新密码<input id="accountNewPasswordConfirm" type="password" minlength="10" maxlength="128" autocomplete="new-password" required></label>
+        <button type="submit">保存新密码</button><p class="small">修改后，其他设备需重新登录。</p>
+      </form></details>
+      <button id="accountManageUsersBtn" class="secondary account-manage-users button-content" data-go="users" data-admin-only hidden><span data-icon="user"></span>用户管理</button>
+    </div>
+    <a id="accountAnonymousLink" class="account-anonymous-link" href="/" hidden>继续匿名浏览</a>
+    <p id="accountStatus" class="account-status small" role="status" aria-live="polite"></p>
+  </div>
+</dialog>
+<dialog id="playerPanel" class="player-dialog" aria-labelledby="playerTitle">
+  <div id="playerViewport" class="player-viewport">
+    <div class="player-heading"><div><span class="small">正在观看</span><h2 id="playerTitle">在线观看</h2></div><button id="closePlayerBtn" class="quiet icon-button" aria-label="关闭播放器"><span data-icon="close"></span></button></div>
+    <div class="player-layout">
+      <section class="player-screen" aria-label="视频播放">
+        <div id="playbackStage" class="playback-stage">
+          <video id="onlineVideo" controls playsinline preload="auto" tabindex="0" aria-label="在线播放器" aria-keyshortcuts="Space ArrowUp ArrowDown ArrowLeft ArrowRight F"></video>
+          <div class="mobile-player-heading mobile-only">
+            <button id="mobileBackBtn" class="quiet icon-button" aria-label="返回剧库"><span data-icon="chevron"></span></button>
+            <span id="mobileHeadingTitle" class="landscape-only"></span><span id="mobileEpisodeLabel">正在加载</span>
+            <button id="mobileRateBtn" class="quiet" aria-label="调整播放倍速">倍速</button>
+            <button id="mobileRotateBtn" class="quiet icon-button" aria-label="横屏播放" aria-pressed="false" disabled><span data-icon="rotate"></span></button>
+            <button id="mobilePlayerSettingsBtn" class="quiet icon-button" aria-label="打开播放设置"><span data-icon="more"></span></button>
+          </div>
+          <button id="mobileLandscapeBtn" class="mobile-landscape-watch mobile-only button-content" hidden><span data-icon="rotate"></span>全屏观看</button>
+          <button id="mobilePlayPauseBtn" class="mobile-play-toggle mobile-only" aria-label="播放"><span data-icon="play"></span></button>
+          <div class="mobile-player-caption mobile-only">
+            <span id="mobileEpisodeVIP" class="mobile-vip-label" hidden>VIP · 仅试看</span><h2 id="mobilePlayerTitle">正在加载</h2>
+            <div class="mobile-progress-heading"><span class="mobile-swipe-hint">上下滑动切换分集</span><span id="mobilePlaybackTime">0:00 / 0:00</span></div>
+            <div class="mobile-progress-row">
+              <button id="mobileTransportBtn" class="quiet icon-button landscape-only" aria-label="暂停"><span class="control-play"><span data-icon="play"></span></span><span class="control-pause"><span data-icon="pause"></span></span></button>
+              <button id="mobileNextEpisodeBtn" class="quiet icon-button landscape-only" aria-label="下一集" disabled><span data-icon="next"></span></button>
+              <span id="mobileCurrentTime" class="landscape-only mobile-time">0:00</span>
+              <input id="mobilePlaybackProgress" type="range" min="0" max="1" step="0.1" value="0" aria-label="播放进度" disabled>
+              <span id="mobileDuration" class="landscape-only mobile-time">0:00</span>
+            </div>
+            <div class="mobile-bottom-actions">
+              <button id="mobileLandscapeRateBtn" class="quiet landscape-only" aria-label="调整播放倍速">倍速</button>
+              <button id="mobileLandscapeQualityBtn" class="quiet landscape-only" aria-label="调整清晰度">自动</button>
+              <button id="mobileEpisodesBtn" class="mobile-episode-rail" aria-label="打开选集"><span>选集 <small id="mobileEpisodeSummary">获取分集中</small></span><span class="mobile-episode-chevron"><span data-icon="chevron"></span></span></button>
+            </div>
+          </div>
+          <div id="playbackGestureStatus" class="playback-gesture-status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+          <div id="playbackDanmaku" class="playback-danmaku" aria-hidden="true"></div>
+          <button id="exitPlayerFullscreenBtn" class="secondary stage-fullscreen-exit" aria-label="退出播放器全屏">退出全屏</button>
+        </div>
+        <div class="player-toolbar"><button id="toggleEpisodesBtn" class="secondary" aria-expanded="false" aria-controls="playerEpisodesPanel">选集</button><button id="previousEpisodeBtn" class="secondary icon-button" aria-label="上一集" title="上一集" disabled><span data-icon="previous"></span></button><button id="nextEpisodeBtn" class="button-content" disabled>下一集<span data-icon="next"></span></button><label id="playbackQualityControl" hidden>画质<select id="playbackQuality" aria-label="播放清晰度"><option value="0">自动</option></select></label><label>倍速<select id="playbackRate" aria-label="播放倍速"><option value="0.75">0.75 倍</option><option value="1" selected>1 倍</option><option value="1.25">1.25 倍</option><option value="1.5">1.5 倍</option><option value="2">2 倍</option><option value="3">3 倍</option></select></label><button id="webFullscreenBtn" class="secondary" aria-pressed="false">网页全屏</button><button id="playerFullscreenBtn" class="secondary icon-button" aria-label="全屏" title="全屏" hidden><span data-icon="fullscreen"></span></button><button id="playerPreferencesBtn" class="secondary icon-button" aria-label="播放设置" aria-expanded="false" aria-controls="playerPreferences"><span data-icon="settings"></span></button></div>
+        <div class="playback-feedback"><span id="playbackStatus" class="small" role="status" aria-live="polite"></span><span id="prefetchStatus" class="small" role="status" aria-live="polite" hidden></span></div>
+        <div id="playbackHistoryStatus" class="small" role="status" aria-live="polite"></div><div class="playback-error-row"><div id="playbackError" class="error" role="alert"></div><button id="retryPlaybackBtn" class="secondary" disabled hidden>重试播放</button></div>
+        <div id="playerPreferences" class="player-preferences" hidden>
+          <div class="mobile-settings-heading mobile-only"><h3 id="mobilePreferencesTitle">更多</h3><button id="closePlayerPreferencesBtn" class="quiet icon-button" aria-label="关闭播放设置"><span data-icon="close"></span></button></div>
+          <div id="mobileRateGroup" class="mobile-setting-group mobile-only"><span>倍速</span><div id="mobileRateChoices" class="mobile-setting-choices" role="group" aria-label="播放倍速"></div></div>
+          <div id="mobileQualityGroup" class="mobile-setting-group mobile-only"><span>清晰度</span><div id="mobileQualityChoices" class="mobile-setting-choices" role="group" aria-label="播放画质"></div></div>
+          <div class="mobile-setting-group mobile-only"><span id="mobileVideoSize">读取视频尺寸…</span><label class="preference-toggle"><span>自动旋转</span><input id="mobileAutoRotate" type="checkbox" checked></label><p id="mobileOrientationHint" class="small">跟随手机方向，也可随时手动旋转。</p><button id="mobileOrientationPermissionBtn" class="secondary" hidden>启用方向感应</button></div>
+          <label class="preference-toggle"><span>自动下一集</span><input id="autoNextEpisode" type="checkbox" checked></label><label class="preference-toggle"><span>预缓存下一集<small>临近结束时提前准备</small></span><input id="prefetchNextEpisode" type="checkbox" checked></label><label class="preference-toggle" id="danmakuControl" hidden><span>弹幕</span><input id="danmakuEnabled" type="checkbox" checked></label><span id="danmakuStatus" class="small" role="status" aria-live="polite" hidden></span>
+          <div class="toolbar"><button id="pictureInPictureBtn" class="secondary" hidden>画中画</button><button id="mobileFullscreenBtn" class="secondary mobile-only" hidden>全屏播放</button></div><p id="playbackHint" class="small player-hint">观看进度自动保存。</p><p class="small player-shortcuts"><span class="player-keyboard-hint">空格播放/暂停，← → 跳转 5 秒，↑ ↓ 调节音量，长按 → 临时 3 倍速，F 全屏。<br></span>上滑下一集、下滑上一集；播放时长按画面临时 3 倍速，松开恢复。横屏时点画面显示或隐藏操作栏。</p>
+        </div>
+      </section>
+      <nav id="playerEpisodesPanel" class="player-episodes" aria-label="选择播放分集"><div class="episode-panel-heading"><div><h3>选集</h3><p id="playbackEpisodeCount" class="small"></p></div><button id="closeEpisodesBtn" class="quiet icon-button" aria-label="关闭选集"><span data-icon="close"></span></button></div><div class="episode-navigation"><select id="episodeRange" aria-label="分集范围"></select><button id="currentEpisodeBtn" class="quiet">当前集</button></div><div id="playbackEpisodes" class="player-episode-list"></div><form id="episodeJumpForm" class="episode-jump"><label for="jumpEpisode">跳到</label><input id="jumpEpisode" type="number" min="1" inputmode="numeric" aria-label="分集序号"><span>集</span><button id="jumpEpisodeBtn" class="secondary" type="submit">前往</button></form></nav>
+    </div>
+    <button id="playerSheetBackdrop" class="player-sheet-backdrop" aria-label="关闭播放面板" tabindex="-1"></button>
+  </div>
+</dialog>
+<div class="toast" id="messageText" role="status" aria-live="polite"></div>
+<script src="/assets/navigation.js"></script>
+<script src="/assets/player-danmaku.js"></script>
+<script src="/assets/history.js"></script>
+<script src="/assets/player-orientation.js"></script>
+<script src="/assets/player-mobile.js"></script>
+<script src="/assets/player-controls.js"></script>
+<script src="/assets/player-capabilities.js"></script>
+<script src="/assets/player-session.js"></script>
+<script src="/assets/player.js?v=20260916-mobile"></script>
+<script src="/assets/library-sort.js"></script>
+<script src="/assets/vip-filter.js"></script>
+<script src="/assets/rankings.js"></script>
+<script type="module" src="/assets/main.js"></script>
+</body>
+</html>

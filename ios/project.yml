@@ -1,0 +1,35 @@
+name: JukuApp
+options:
+  bundleIdPrefix: com.juku
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  JukuApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: JukuApp
+    scheme:
+      testTargets: []
+      gatherCoverageData: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.juku.ios
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: JukuApp/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Manual
+        # 自签名/侧载：开发阶段 Automatic 亦可，出 IPA 时换 ad-hoc
+        CODE_SIGN_IDENTITY: "Apple Development"
+        ENABLE_BITCODE: false
+        # ATS 由 Info.plist 控制
+      configs:
+        debug:
+          CODE_SIGN_STYLE: Automatic
+        release:
+          CODE_SIGN_STYLE: Manual

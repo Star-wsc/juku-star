@@ -1,0 +1,28 @@
+name: juku
+services:
+  app:
+    image: ${JUKU_IMAGE:-juku:local}
+    build:
+      context: .
+    ports:
+      - "${JUKU_BIND_ADDRESS:-0.0.0.0}:${JUKU_PORT:-8998}:8998"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      JUKU_PROXY_URL: ${JUKU_PROXY_URL:-}
+      JUKU_ADMIN_USER: ${JUKU_ADMIN_USER:-}
+      JUKU_ADMIN_PASSWORD: ${JUKU_ADMIN_PASSWORD:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - data:/data
+      - downloads:/downloads
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  data:
+  downloads:

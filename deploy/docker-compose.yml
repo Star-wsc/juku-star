@@ -1,0 +1,39 @@
+services:
+  # 完整版（黄果/黄豆/红果）
+  juku:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        HONGGUO_ONLY: "0"
+    image: juku:latest
+    container_name: juku-full
+    ports:
+      - "8998:8998"
+    volumes:
+      - ./data-full:/data
+      - ./downloads-full:/downloads
+    environment:
+      TZ: Asia/Shanghai
+      JUKU_ADMIN_PASSWORD: ${JUKU_ADMIN_PASSWORD:-juku123456}
+    restart: unless-stopped
+
+  # 红果版（仅红果）
+  juku-hongguo:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        HONGGUO_ONLY: "1"
+    image: juku:hongguo
+    container_name: juku-hongguo
+    ports:
+      - "8999:8998"
+    volumes:
+      - ./data-hongguo:/data
+      - ./downloads-hongguo:/downloads
+    environment:
+      TZ: Asia/Shanghai
+      JUKU_HONGGUO_ONLY: "1"
+      JUKU_ADMIN_PASSWORD: ${JUKU_ADMIN_PASSWORD:-juku123456}
+    restart: unless-stopped

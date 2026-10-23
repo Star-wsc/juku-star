@@ -1,0 +1,56 @@
+# build outputs
+backend/juku
+backend/juku.exe
+backend/juku.exe~
+**/dist/
+**/bin/
+
+# runtime data / secrets
+**/data/
+**/downloads/
+**/data-*/
+**/downloads-*/
+*.log
+logs/
+keystore.properties
+*.jks
+.env
+.env.local
+
+# os / ide
+.DS_Store
+.vscode/
+.idea/
+*.tmp
+node_modules/
+windows/dist/
+wpf/bin/
+wpf/obj/
+
+windows/src-tauri/target/
+winui/obj/
+wpf/bin/
+wpf/obj/
+android/juku-release.jks
+*.p12
+
+windows/
+winui/
+wpf/
+
+# 发布安装包走 GitHub Releases，不进源码仓
+apk/*.apk
+apk/*.apks
+apk/*.aab
+
+# 开发文档/补丁/内部脚本仅本地，不进公开仓
+docs/
+patches/
+mock-server/
+scripts/make_announce*.py
+scripts/smoke_*.py
+scripts/verify_service.py
+ios/CI.md
+ios/scripts/smoke_api.py
+*-local-private/
+juku-local-private/
