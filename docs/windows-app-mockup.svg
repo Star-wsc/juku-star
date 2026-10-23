@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5F5F7"/>
+      <stop offset="100%" stop-color="#E8E8ED"/>
+    </linearGradient>
+    <linearGradient id="sidebar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ECECF1"/>
+      <stop offset="100%" stop-color="#E4E4EA"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4D9FFF"/>
+      <stop offset="100%" stop-color="#6C5CE7"/>
+    </linearGradient>
+    <linearGradient id="p1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1B3A6B"/><stop offset="100%" stop-color="#4D9FFF"/>
+    </linearGradient>
+    <linearGradient id="p2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5C1A1A"/><stop offset="100%" stop-color="#E85D4C"/>
+    </linearGradient>
+    <linearGradient id="p3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0D3B34"/><stop offset="100%" stop-color="#2BB673"/>
+    </linearGradient>
+    <linearGradient id="p4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4A1942"/><stop offset="100%" stop-color="#C86FCB"/>
+    </linearGradient>
+    <linearGradient id="p5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3D2914"/><stop offset="100%" stop-color="#E09F3E"/>
+    </linearGradient>
+    <linearGradient id="p6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A1A2E"/><stop offset="100%" stop-color="#4A4A8A"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+    <clipPath id="win"><rect x="40" y="36" width="1200" height="728" rx="18"/></clipPath>
+    <clipPath id="card1"><rect x="248" y="210" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card2"><rect x="436" y="210" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card3"><rect x="624" y="210" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card4"><rect x="812" y="210" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card5"><rect x="1000" y="210" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card6"><rect x="248" y="478" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card7"><rect x="436" y="478" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card8"><rect x="624" y="478" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card9"><rect x="812" y="478" width="168" height="228" rx="16"/></clipPath>
+    <clipPath id="card10"><rect x="1000" y="478" width="168" height="228" rx="16"/></clipPath>
+  </defs>
+
+  <!-- desktop bg -->
+  <rect width="1280" height="800" fill="url(#bg)"/>
+  <circle cx="1100" cy="80" r="180" fill="#4D9FFF" opacity="0.06"/>
+  <circle cx="120" cy="720" r="200" fill="#6C5CE7" opacity="0.05"/>
+
+  <!-- window -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="36" width="1200" height="728" rx="18" fill="#FFFFFF"/>
+  </g>
+  <g clip-path="url(#win)">
+    <!-- title bar / glass -->
+    <rect x="40" y="36" width="1200" height="52" fill="#F7F7FA"/>
+    <rect x="40" y="36" width="1200" height="52" fill="url(#sidebar)" opacity="0.35"/>
+    <!-- traffic lights -->
+    <circle cx="72" cy="62" r="6" fill="#FF5F57"/>
+    <circle cx="92" cy="62" r="6" fill="#FEBC2E"/>
+    <circle cx="112" cy="62" r="6" fill="#28C840"/>
+    <text x="640" y="67" text-anchor="middle" font-family="-apple-system,SF Pro Display,PingFang SC,Microsoft YaHei,sans-serif" font-size="13" fill="#6E6E73" font-weight="500">短剧库</text>
+
+    <!-- sidebar -->
+    <rect x="40" y="88" width="176" height="676" fill="url(#sidebar)"/>
+    <rect x="52" y="120" width="152" height="40" rx="12" fill="url(#accent)" opacity="0.12"/>
+    <rect x="52" y="120" width="4" height="40" rx="2" fill="#4D9FFF"/>
+    <text x="72" y="145" font-family="-apple-system,PingFang SC,sans-serif" font-size="14" fill="#1D1D1F" font-weight="600">剧库</text>
+    <text x="72" y="197" font-family="-apple-system,PingFang SC,sans-serif" font-size="14" fill="#6E6E73">追剧</text>
+    <text x="72" y="241" font-family="-apple-system,PingFang SC,sans-serif" font-size="14" fill="#6E6E73">下载</text>
+    <text x="72" y="285" font-family="-apple-system,PingFang SC,sans-serif" font-size="14" fill="#6E6E73">历史</text>
+    <text x="72" y="329" font-family="-apple-system,PingFang SC,sans-serif" font-size="14" fill="#6E6E73">设置</text>
+    <rect x="52" y="680" width="152" height="56" rx="14" fill="#FFFFFF" opacity="0.7"/>
+    <text x="68" y="706" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">服务器</text>
+    <text x="68" y="724" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1D1D1F">192.168.31.10:22222</text>
+
+    <!-- main header -->
+    <text x="248" y="128" font-family="-apple-system,PingFang SC,sans-serif" font-size="28" fill="#1D1D1F" font-weight="700">短剧库</text>
+    <text x="248" y="152" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#6E6E73">发现更多好看的故事 · 共 1,284 部</text>
+
+    <!-- search pill -->
+    <rect x="920" y="108" width="220" height="36" rx="18" fill="#ECECF1"/>
+    <text x="944" y="131" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#8E8E93">搜索剧名…</text>
+    <circle cx="1120" cy="126" r="10" fill="url(#accent)"/>
+    <path d="M1116 126 h8 M1120 122 v8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- filter chips -->
+    <rect x="248" y="168" width="64" height="30" rx="15" fill="url(#accent)"/>
+    <text x="280" y="188" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#fff" font-weight="600">红果</text>
+    <rect x="322" y="168" width="56" height="30" rx="15" fill="#ECECF1"/>
+    <text x="350" y="188" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#1D1D1F">全部</text>
+    <rect x="388" y="168" width="88" height="30" rx="15" fill="#ECECF1"/>
+    <text x="432" y="188" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#1D1D1F">分类</text>
+    <rect x="486" y="168" width="108" height="30" rx="15" fill="#ECECF1"/>
+    <text x="540" y="188" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#1D1D1F">排序: 随机</text>
+    <rect x="604" y="168" width="88" height="30" rx="15" fill="#ECECF1"/>
+    <text x="648" y="188" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#1D1D1F">隐藏VIP</text>
+
+    <!-- cards row 1 -->
+    <g filter="url(#soft)">
+      <rect x="248" y="210" width="168" height="228" rx="16" fill="#fff"/>
+    </g>
+    <g clip-path="url(#card1)"><rect x="248" y="210" width="168" height="168" fill="url(#p1)"/>
+      <text x="332" y="300" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">逆袭人生</text></g>
+    <text x="264" y="406" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">逆袭人生</text>
+    <text x="264" y="426" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">80集 · 8.6</text>
+    <rect x="368" y="398" width="32" height="16" rx="8" fill="#FFD60A" opacity="0.9"/>
+    <text x="384" y="410" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="9" fill="#1D1D1F">新</text>
+
+    <g filter="url(#soft)"><rect x="436" y="210" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card2)"><rect x="436" y="210" width="168" height="168" fill="url(#p2)"/>
+      <text x="520" y="300" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">豪门夜宴</text></g>
+    <text x="452" y="406" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">豪门夜宴</text>
+    <text x="452" y="426" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">120集 · 8.8</text>
+
+    <g filter="url(#soft)"><rect x="624" y="210" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card3)"><rect x="624" y="210" width="168" height="168" fill="url(#p3)"/>
+      <text x="708" y="300" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">乡村情缘</text></g>
+    <text x="640" y="406" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">乡村情缘</text>
+    <text x="640" y="426" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">54集 · 8.4</text>
+
+    <g filter="url(#soft)"><rect x="812" y="210" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card4)"><rect x="812" y="210" width="168" height="168" fill="url(#p4)"/>
+      <text x="896" y="300" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">都市仙尊</text></g>
+    <text x="828" y="406" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">都市仙尊</text>
+    <text x="828" y="426" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">200集 · 9.0</text>
+
+    <g filter="url(#soft)"><rect x="1000" y="210" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card5)"><rect x="1000" y="210" width="168" height="168" fill="url(#p5)"/>
+      <text x="1084" y="300" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">年代文</text></g>
+    <text x="1016" y="406" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">重回1980</text>
+    <text x="1016" y="426" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">66集 · 8.5</text>
+
+    <!-- cards row 2 -->
+    <g filter="url(#soft)"><rect x="248" y="478" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card6)"><rect x="248" y="478" width="168" height="168" fill="url(#p6)"/>
+      <text x="332" y="568" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">AI老公</text></g>
+    <text x="264" y="674" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">AI对象竟是闪婚</text>
+    <text x="264" y="694" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">42集 · 8.3</text>
+
+    <g filter="url(#soft)"><rect x="436" y="478" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card7)"><rect x="436" y="478" width="168" height="168" fill="url(#p1)"/>
+      <text x="520" y="568" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">重生复仇</text></g>
+    <text x="452" y="674" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">重生之复仇千金</text>
+    <text x="452" y="694" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">72集 · 8.7</text>
+
+    <g filter="url(#soft)"><rect x="624" y="478" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card8)"><rect x="624" y="478" width="168" height="168" fill="url(#p3)"/>
+      <text x="708" y="568" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">渔村</text></g>
+    <text x="640" y="674" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">八零赶海日记</text>
+    <text x="640" y="694" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">48集 · 8.2</text>
+
+    <g filter="url(#soft)"><rect x="812" y="478" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card9)"><rect x="812" y="478" width="168" height="168" fill="url(#p2)"/>
+      <text x="896" y="568" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">商战</text></g>
+    <text x="828" y="674" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">商界女王归来</text>
+    <text x="828" y="694" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">90集 · 8.9</text>
+
+    <g filter="url(#soft)"><rect x="1000" y="478" width="168" height="228" rx="16" fill="#fff"/></g>
+    <g clip-path="url(#card10)"><rect x="1000" y="478" width="168" height="168" fill="url(#p4)"/>
+      <text x="1084" y="568" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#fff" opacity="0.9">萌宝</text></g>
+    <text x="1016" y="674" font-family="-apple-system,PingFang SC,sans-serif" font-size="13" fill="#1D1D1F" font-weight="600">天才萌宝找上门</text>
+    <text x="1016" y="694" font-family="-apple-system,PingFang SC,sans-serif" font-size="11" fill="#6E6E73">36集 · 8.4</text>
+  </g>
+</svg>

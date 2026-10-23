@@ -1,0 +1,137 @@
+<Application x:Class="JukuWpf.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- 深色设计 token（对齐组件字典） -->
+        <SolidColorBrush x:Key="Bg" Color="#0B0B0F"/>
+        <SolidColorBrush x:Key="BgElevated" Color="#12121A"/>
+        <SolidColorBrush x:Key="BgCard" Color="#14141C"/>
+        <SolidColorBrush x:Key="BgHover" Color="#1A1A24"/>
+        <SolidColorBrush x:Key="Border" Color="#2A2A36"/>
+        <SolidColorBrush x:Key="Ink" Color="#F4F4F7"/>
+        <SolidColorBrush x:Key="Ink2" Color="#C8C8D4"/>
+        <SolidColorBrush x:Key="Muted" Color="#8E8EA0"/>
+        <SolidColorBrush x:Key="Accent" Color="#7C6AF7"/>
+        <SolidColorBrush x:Key="Accent2" Color="#9B8CFF"/>
+
+        <!-- 浅色主窗口 token -->
+        <SolidColorBrush x:Key="LightBg" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="LightSurface" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="LightInk" Color="#1D1D1F"/>
+        <SolidColorBrush x:Key="LightInk2" Color="#6E6E73"/>
+        <SolidColorBrush x:Key="LightFill" Color="#ECECF1"/>
+
+        <Style x:Key="BtnDark" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="8" Padding="12,0"
+                                Background="#2A2A36" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#3A3A48"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#222230"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BtnAccent" TargetType="Button" BasedOn="{StaticResource BtnDark}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="8" Padding="12,0" Background="{StaticResource Accent}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource Accent2}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ListBox 深色 -->
+        <Style x:Key="ListDark" TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource BgElevated}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource Ink2}"/>
+        </Style>
+        <Style x:Key="ListDarkItem" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Foreground" Value="{StaticResource Ink2}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="bd" CornerRadius="8" Padding="{TemplateBinding Padding}" Background="Transparent">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource Accent}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource BgHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 兼容主窗口旧样式名 -->
+        <Style x:Key="PrimaryBtn" TargetType="Button" BasedOn="{StaticResource BtnAccent}"/>
+        <Style x:Key="SecondaryBtn" TargetType="Button" BasedOn="{StaticResource BtnDark}"/>
+        <Style x:Key="ChipBtn" TargetType="Button" BasedOn="{StaticResource BtnDark}"/>
+        <Style x:Key="NavBtn" TargetType="Button" BasedOn="{StaticResource BtnDark}"/>
+
+        <Style x:Key="NavLight" TargetType="Button">
+            <Setter Property="Foreground" Value="#1D1D1F"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="10" Padding="16,0" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#0F000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="NavLightSelected" TargetType="Button" BasedOn="{StaticResource NavLight}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="10" Padding="16,0" Background="#224D9FFF">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

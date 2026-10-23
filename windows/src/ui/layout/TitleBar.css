@@ -1,0 +1,80 @@
+.titlebar {
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  background: rgba(247, 247, 250, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+  padding-left: 18px;
+}
+
+:root[data-theme="dark"] .titlebar {
+  background: rgba(44, 44, 46, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .titlebar {
+    background: rgba(44, 44, 46, 0.92);
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.titlebar-text {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+  /* 让标题相对内容居中：左右各留出控件区 */
+  margin-left: 132px;
+}
+
+.win-controls {
+  display: flex;
+  height: 100%;
+  margin-left: auto;
+}
+
+.win-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  opacity: 0.75;
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}
+
+.win-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+
+.win-btn:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.win-btn.close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+.win-btn.close:active {
+  background: #c50f1f;
+  color: #fff;
+}
+
+:root[data-theme="dark"] .win-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] .win-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}

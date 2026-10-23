@@ -1,0 +1,60 @@
+.library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.library-chips {
+  margin-bottom: 22px;
+  position: relative;
+}
+
+.sort-wrap {
+  position: relative;
+}
+
+.sort-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 20;
+  min-width: 132px;
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sort-item {
+  text-align: left;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.sort-item:hover {
+  background: var(--fill);
+}
+
+.sort-item.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-soft);
+}
+
+.refresh-btn {
+  margin-left: auto;
+}
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 168px);
+  gap: var(--card-gap) 20px;
+  justify-content: start;
+}

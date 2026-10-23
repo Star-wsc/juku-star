@@ -1,0 +1,164 @@
+<Window
+    x:Class="JukuWinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="短剧库">
+
+    <Grid x:Name="RootGrid" Background="{StaticResource JukuBgBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 标题栏：文字居中，窗口控件在右 -->
+        <Grid x:Name="TitleBarGrid" Grid.Row="0" Background="#F7F7FA">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="138" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="138" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Grid.Column="1"
+                x:Name="TitleText"
+                Text="短剧库"
+                FontSize="13"
+                FontWeight="Medium"
+                Foreground="{StaticResource JukuTextSecondaryBrush}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+            <StackPanel
+                Grid.Column="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch">
+                <Button x:Name="MinBtn" Width="46" Height="48" Click="MinBtn_Click"
+                        Background="Transparent" BorderThickness="0" Padding="0">
+                    <FontIcon Glyph="&#xE921;" FontSize="10" Foreground="{StaticResource JukuTextSecondaryBrush}" />
+                </Button>
+                <Button x:Name="MaxBtn" Width="46" Height="48" Click="MaxBtn_Click"
+                        Background="Transparent" BorderThickness="0" Padding="0">
+                    <FontIcon x:Name="MaxIcon" Glyph="&#xE922;" FontSize="10" Foreground="{StaticResource JukuTextSecondaryBrush}" />
+                </Button>
+                <Button x:Name="CloseBtn" Width="46" Height="48" Click="CloseBtn_Click"
+                        Background="Transparent" BorderThickness="0" Padding="0">
+                    <FontIcon Glyph="&#xE8BB;" FontSize="10" Foreground="{StaticResource JukuTextSecondaryBrush}" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 主体 -->
+        <Grid x:Name="BodyGrid" Grid.Row="1">
+            <!-- 登录门 -->
+            <Grid x:Name="LoginRoot" Visibility="Visible">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Width="380"
+                    Spacing="12">
+                    <Border
+                        Background="{StaticResource JukuSurfaceBrush}"
+                        CornerRadius="20"
+                        Padding="36,32">
+                        <StackPanel Spacing="12">
+                            <Border
+                                Width="64" Height="64"
+                                CornerRadius="18"
+                                HorizontalAlignment="Center"
+                                Background="{StaticResource JukuAccentBrush}">
+                                <TextBlock Text="剧" FontSize="28" FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="短剧库" FontSize="24" FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{StaticResource JukuTextBrush}" />
+                            <TextBlock Text="连接服务器后进入剧库 · 配置会保存在本机"
+                                       FontSize="13" TextAlignment="Center"
+                                       Foreground="{StaticResource JukuTextSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                            <TextBox x:Name="ServerBox" PlaceholderText="http://127.0.0.1:8998"
+                                     Header="服务器地址" Margin="0,8,0,0" />
+                            <TextBox x:Name="UserBox" PlaceholderText="用户名" Header="账号" />
+                            <PasswordBox x:Name="PassBox" PlaceholderText="密码" Header="密码"
+                                         KeyDown="PassBox_KeyDown" />
+                            <Button x:Name="LoginBtn" Content="进入剧库"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Height="42"
+                                    Click="LoginBtn_Click" />
+                            <TextBlock x:Name="LoginError" Foreground="{StaticResource JukuDangerBrush}"
+                                       FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- 主界面 -->
+            <Grid x:Name="MainRoot" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="188" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 侧栏 -->
+                <Grid Grid.Column="0" Background="#ECECF1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Margin="12,12,12,0" Spacing="4">
+                        <ListView x:Name="NavList"
+                                  SelectionMode="Single"
+                                  IsItemClickEnabled="True"
+                                  ItemClick="NavList_ItemClick"
+                                  Background="Transparent"
+                                  SelectionChanged="NavList_SelectionChanged">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Height" Value="40" />
+                                    <Setter Property="Margin" Value="0,2" />
+                                    <Setter Property="CornerRadius" Value="12" />
+                                    <Setter Property="Padding" Value="16,0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListViewItem Tag="library">
+                                <TextBlock Text="剧库" FontSize="14" />
+                            </ListViewItem>
+                            <ListViewItem Tag="following">
+                                <TextBlock Text="追剧" FontSize="14" />
+                            </ListViewItem>
+                            <ListViewItem Tag="download">
+                                <TextBlock Text="下载" FontSize="14" />
+                            </ListViewItem>
+                            <ListViewItem Tag="history">
+                                <TextBlock Text="历史" FontSize="14" />
+                            </ListViewItem>
+                            <ListViewItem Tag="settings">
+                                <TextBlock Text="设置" FontSize="14" />
+                            </ListViewItem>
+                        </ListView>
+                    </StackPanel>
+                    <Border Grid.Row="1" Margin="12,12,12,16"
+                            Background="#FFFFFF" CornerRadius="14" Padding="12,10">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="服务器" FontSize="11"
+                                       Foreground="{StaticResource JukuTextSecondaryBrush}" />
+                            <TextBlock x:Name="ServerLabel" Text="—"
+                                       FontSize="11" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="AccountLabel" Text=""
+                                       FontSize="11"
+                                       Foreground="{StaticResource JukuTextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 内容 -->
+                <Grid x:Name="ContentGrid" Grid.Column="1">
+                    <Frame x:Name="ContentFrame" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

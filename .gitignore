@@ -1,0 +1,35 @@
+# build outputs
+backend/juku
+backend/juku.exe
+backend/juku.exe~
+**/dist/
+**/bin/
+
+# runtime data / secrets
+**/data/
+**/downloads/
+**/data-*/
+**/downloads-*/
+*.log
+logs/
+keystore.properties
+*.jks
+.env
+.env.local
+
+# os / ide
+.DS_Store
+.vscode/
+.idea/
+*.tmp
+node_modules/
+windows/dist/
+wpf/bin/
+wpf/obj/
+
+windows/src-tauri/target/
+winui/obj/
+wpf/bin/
+wpf/obj/
+android/juku-release.jks
+*.p12

@@ -1,0 +1,85 @@
+.detail-page {
+  position: relative;
+}
+
+.back-link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  padding: 4px 0;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.detail-hero {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 32px;
+}
+
+.detail-cover {
+  width: 200px;
+  height: 268px;
+  object-fit: cover;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  background: var(--fill);
+  flex-shrink: 0;
+}
+
+.detail-cover-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.detail-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.vip-tag {
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: var(--warning);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.detail-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 640px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.detail-episodes {
+  margin-top: 8px;
+}

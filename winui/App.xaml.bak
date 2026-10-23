@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="JukuWinUI.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- 设计 Token：色板唯一来源 -->
+            <Color x:Key="JukuBgColor">#F5F5F7</Color>
+            <Color x:Key="JukuSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="JukuSidebarStartColor">#ECECF1</Color>
+            <Color x:Key="JukuSidebarEndColor">#E4E4EA</Color>
+            <Color x:Key="JukuTextColor">#1D1D1F</Color>
+            <Color x:Key="JukuTextSecondaryColor">#6E6E73</Color>
+            <Color x:Key="JukuFillColor">#ECECF1</Color>
+            <Color x:Key="JukuAccentColor">#4D9FFF</Color>
+            <Color x:Key="JukuAccent2Color">#6C5CE7</Color>
+            <Color x:Key="JukuDangerColor">#FF3B30</Color>
+            <Color x:Key="JukuSuccessColor">#28C840</Color>
+
+            <SolidColorBrush x:Key="JukuBgBrush" Color="{StaticResource JukuBgColor}" />
+            <SolidColorBrush x:Key="JukuSurfaceBrush" Color="{StaticResource JukuSurfaceColor}" />
+            <SolidColorBrush x:Key="JukuTextBrush" Color="{StaticResource JukuTextColor}" />
+            <SolidColorBrush x:Key="JukuTextSecondaryBrush" Color="{StaticResource JukuTextSecondaryColor}" />
+            <SolidColorBrush x:Key="JukuFillBrush" Color="{StaticResource JukuFillColor}" />
+            <SolidColorBrush x:Key="JukuAccentBrush" Color="{StaticResource JukuAccentColor}" />
+            <SolidColorBrush x:Key="JukuDangerBrush" Color="{StaticResource JukuDangerColor}" />
+            <SolidColorBrush x:Key="JukuSuccessBrush" Color="{StaticResource JukuSuccessColor}" />
+
+            <Style x:Key="PageTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="28" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="Foreground" Value="{StaticResource JukuTextBrush}" />
+            </Style>
+            <Style x:Key="PageSubStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{StaticResource JukuTextSecondaryBrush}" />
+                <Setter Property="Margin" Value="0,6,0,0" />
+            </Style>
+            <Style x:Key="ChipStyle" TargetType="Button">
+                <Setter Property="Height" Value="30" />
+                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="CornerRadius" Value="15" />
+                <Setter Property="Background" Value="{StaticResource JukuFillBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource JukuTextBrush}" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="ChipSelectedStyle" TargetType="Button" BasedOn="{StaticResource ChipStyle}">
+                <Setter Property="Background" Value="{StaticResource JukuAccentBrush}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+            <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+                <Setter Property="Height" Value="38" />
+                <Setter Property="Padding" Value="18,0" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Background" Value="{StaticResource JukuAccentBrush}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+            <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+                <Setter Property="Height" Value="38" />
+                <Setter Property="Padding" Value="18,0" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Background" Value="{StaticResource JukuFillBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource JukuTextBrush}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
