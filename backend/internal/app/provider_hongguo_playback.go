@@ -16,7 +16,8 @@ import (
 	"strings"
 )
 
-const hongguoPlaybackAPI = "https://djapi.999888456.xyz/api/hongguo/play"
+// long: 该备用口 TLS ALPN 协商失败，仅 HTTP 可用。
+const hongguoPlaybackAPI = "http://djapi.999888456.xyz/api/hongguo/play"
 
 var hongguoNumericID = regexp.MustCompile(`^[0-9]{1,32}$`)
 var hongguoQualityNumber = regexp.MustCompile(`[0-9]+`)

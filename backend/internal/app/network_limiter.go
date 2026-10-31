@@ -23,6 +23,13 @@ type requestBackoff struct {
 	reason string
 }
 
+// skipHostBackoffKey 标记本次请求的 403/429 不做整域退避（例如单集权限拒绝）。
+type skipHostBackoffKey struct{}
+
+func withSkipHostBackoff(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipHostBackoffKey{}, true)
+}
+
 func (backoff *requestBackoff) Error() string {
 	reason := ""
 	if backoff.reason != "" {
@@ -191,8 +198,11 @@ func (limiter *requestLimiter) observe(request *http.Request, response *http.Res
 	if response.StatusCode != http.StatusForbidden && response.StatusCode != http.StatusTooManyRequests {
 		return
 	}
+	if skip, _ := request.Context().Value(skipHostBackoffKey{}).(bool); skip {
+		return
+	}
 	delay := time.Minute
-	if seconds, err := strconv.Atoi(response.Header.Get("Retry-After")); err == nil && seconds > 0 {
+	if seconds, err := strconv.Atoi(strings.TrimSpace(response.Header.Get("Retry-After"))); err == nil && seconds > 0 {
 		delay = time.Duration(seconds) * time.Second
 	} else if until, err := http.ParseTime(response.Header.Get("Retry-After")); err == nil && time.Until(until) > 0 {
 		delay = time.Until(until)

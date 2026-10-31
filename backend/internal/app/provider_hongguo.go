@@ -226,25 +226,27 @@ func (d *Downloader) resolveHongguoMedia(ctx context.Context, task Task) (provid
 
 func (d *Downloader) resolveHongguoWebMedia(ctx context.Context, seriesID, videoID string) (providerMedia, error) {
 	pageURL := hongguoBaseURL + "/player/" + url.PathEscape(seriesID) + "/" + url.PathEscape(videoID)
+	protected := true
 	body, err := d.fetchProviderText(ctx, pageURL, hongguoBaseURL+"/")
-	if err != nil {
+	if err == nil {
+		page := routerLoaderMap(parseRouterData(body), "player_", "player_page")
+		if mapString(page, "vid") == videoID && mapString(page, "series_id") == seriesID {
+			protected, _ = page["protectedPlayback"].(bool)
+			info, _ := page["video_player_info"].(map[string]any)
+			mediaURL := mapString(info, "main_url")
+			if !protected && isProviderHTTPMediaURL(mediaURL) {
+				duration, _ := strconv.ParseFloat(mapString(info, "duration"), 64)
+				return providerMedia{URL: mediaURL, Referer: d.providerBaseURL(sourceHongguo) + "/", Duration: time.Duration(duration * float64(time.Second))}, nil
+			}
+		} else {
+			err = fmt.Errorf("红果未返回所请求的剧集，可能仅允许网页试看；请在站点确认该集的访问权限")
+		}
+	}
+	if err != nil && ctx.Err() != nil {
 		return providerMedia{}, err
 	}
-	page := routerLoaderMap(parseRouterData(body), "player_", "player_page")
-	if mapString(page, "vid") != videoID || mapString(page, "series_id") != seriesID {
-		return providerMedia{}, fmt.Errorf("红果未返回所请求的剧集，可能仅允许网页试看；请在站点确认该集的访问权限")
-	}
-	if protected, _ := page["protectedPlayback"].(bool); protected {
-		// 新版官网页面只声明受保护播放，媒体地址改走 play-info 接口
-		return d.resolveHongguoProtectedMedia(ctx, seriesID, videoID)
-	}
-	info, _ := page["video_player_info"].(map[string]any)
-	mediaURL := mapString(info, "main_url")
-	if !isProviderHTTPMediaURL(mediaURL) {
-		return d.resolveHongguoProtectedMedia(ctx, seriesID, videoID)
-	}
-	duration, _ := strconv.ParseFloat(mapString(info, "duration"), 64)
-	return providerMedia{URL: mediaURL, Referer: d.providerBaseURL(sourceHongguo) + "/", Duration: time.Duration(duration * float64(time.Second))}, nil
+	// 页面 404/结构变更时仍直接打 play-info，避免网页取流整条不可用。
+	return d.resolveHongguoProtectedMedia(ctx, seriesID, videoID)
 }
 
 func hongguoCoverAddress(values ...string) string {

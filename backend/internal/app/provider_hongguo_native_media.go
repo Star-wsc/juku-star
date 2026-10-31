@@ -7,20 +7,28 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// hongguoOpenAPIBase 安卓开放取流口（无签名）。version_code 必须 74232，否则只回 bytevc2 或空。
+const hongguoOpenAPIBase = "https://api5-normal-sinfonlinec.fqnovel.com"
+
 func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoID string) (providerMedia, error) {
 	if !hongguoNumericID.MatchString(videoID) {
 		return providerMedia{}, errors.New("视频 ID 无效")
 	}
-	// long: 播放模型接口使用新版 X-Gorgon 签名；固定设备 ID 会被判为 110001，必须使用随机设备 ID。
+	if media, err := downloader.resolveHongguoOpenMedia(ctx, videoID); err == nil {
+		return media, nil
+	} else if ctx.Err() != nil {
+		return providerMedia{}, err
+	}
+	// 旧签名播放口（2026-10 起常回空包），仅作回退。
 	ctx = context.WithValue(ctx, hongguoModelSignKey{}, true)
 	payload := map[string]any{
-		// long: 批量接口按内容类型接收分集列表，响应中的 video_model 包含可直接播放的清晰度列表。
 		"mixed_video_id_map": map[string][]string{"1004": {videoID}},
 		"biz_param": map[string]any{
 			"detail_page_version": 0, "device_level": 3, "disable_digg_stat": false,
@@ -33,6 +41,68 @@ func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoI
 		return providerMedia{}, err
 	}
 	return parseHongguoAppPreloadMedia(result, videoID)
+}
+
+// resolveHongguoOpenMedia 走无签名 bookapi 取流（与官方安卓一致，全集可播）。
+func (downloader *Downloader) resolveHongguoOpenMedia(ctx context.Context, videoID string) (providerMedia, error) {
+	client := downloader.hongguoClient()
+	client.mu.Lock()
+	deviceID := client.state.DeviceID
+	client.mu.Unlock()
+	if deviceID == "" {
+		deviceID = newHongguoDeviceID()
+	}
+	query := url.Values{
+		"aid": {"8662"}, "device_id": {deviceID},
+		"version_code": {"74232"}, "update_version_code": {"74232"},
+		"device_platform": {"android"}, "os": {"android"},
+		"app_name": {"novelread"}, "channel": {"hongguo_baidu_pz_kaiping0105_android"},
+		"video_id": {videoID}, "video_platform": {"1024"},
+		"need_all_video_definition": {"1"},
+	}
+	address := hongguoOpenAPIBase + "/reading/bookapi/video_tab/multi_video_model/v/?" + query.Encode()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+	if err != nil {
+		return providerMedia{}, err
+	}
+	response, err := downloader.doCatalogRequestWithTimeout(request, 25*time.Second)
+	if err != nil {
+		return providerMedia{}, err
+	}
+	defer response.Body.Close()
+	content, err := io.ReadAll(io.LimitReader(response.Body, providerMaxBodyBytes+1))
+	if err != nil {
+		return providerMedia{}, errors.New("读取 App 开放取流响应失败")
+	}
+	if response.StatusCode != http.StatusOK {
+		return providerMedia{}, fmt.Errorf(" App 开放取流 HTTP %d", response.StatusCode)
+	}
+	if len(content) == 0 || len(content) > providerMaxBodyBytes {
+		return providerMedia{}, errors.New(" App 开放取流返回空正文")
+	}
+	var result map[string]any
+	decoder := json.NewDecoder(strings.NewReader(string(content)))
+	decoder.UseNumber()
+	if err := decoder.Decode(&result); err != nil {
+		return providerMedia{}, errors.New(" App 开放取流响应格式异常")
+	}
+	models := nestedMap(result, "data", "video_model_data")
+	entry := nestedMap(models, videoID)
+	model := entry["video_model"]
+	var parsed map[string]any
+	switch value := model.(type) {
+	case map[string]any:
+		parsed = value
+	case string:
+		inner := json.NewDecoder(strings.NewReader(value))
+		inner.UseNumber()
+		if err := inner.Decode(&parsed); err != nil {
+			return providerMedia{}, errors.New(" App 播放信息格式异常")
+		}
+	default:
+		return providerMedia{}, errors.New(" App 未返回所请求分集的播放信息")
+	}
+	return selectHongguoAppMedia(parsed)
 }
 
 func parseHongguoAppPreloadMedia(result map[string]any, videoID string) (providerMedia, error) {

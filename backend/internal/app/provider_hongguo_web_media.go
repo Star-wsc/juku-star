@@ -33,6 +33,8 @@ func (d *Downloader) resolveHongguoProtectedMedia(ctx context.Context, seriesID,
 		return providerMedia{}, errors.New("网页播放接口地址无效")
 	}
 	referer := origin.Scheme + "://" + origin.Host + "/player/" + seriesID + "/" + videoID
+	// 单集 403/401 只表示该集权限，不做整域退避，避免连免费集也被拖死。
+	ctx = withSkipHostBackoff(ctx)
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, address, bytes.NewReader(payload))
 	if err != nil {
 		return providerMedia{}, err
@@ -54,7 +56,7 @@ func (d *Downloader) resolveHongguoProtectedMedia(ctx context.Context, seriesID,
 		return providerMedia{}, errors.New("读取网页播放信息失败")
 	}
 	if response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusUnauthorized {
-		return providerMedia{}, errors.New("红果该集需要登录或会员权限，未登录仅能播前几集试看")
+		return providerMedia{}, errors.New("红果网页口仅开放前几集试看，该集需走 App 取流（App 口暂时空包）")
 	}
 	if response.StatusCode != http.StatusOK {
 		return providerMedia{}, fmt.Errorf("网页播放接口 HTTP %d", response.StatusCode)
@@ -86,7 +88,7 @@ func (d *Downloader) resolveHongguoProtectedMedia(ctx context.Context, seriesID,
 func parseHongguoProtectedMedia(result map[string]any, referer string, now time.Time) (providerMedia, error) {
 	code := mapString(nestedMap(result, "base_resp"), "StatusCode")
 	if code != "" && code != "0" {
-		return providerMedia{}, errors.New("网页未授权播放该集，请在站点确认是否仍可访问")
+		return providerMedia{}, errors.New("红果网页未开放该集试看，请走 App 取流")
 	}
 	info := nestedMap(result, "play_info")
 	legacy := nestedMap(result, "legacy_play_info")

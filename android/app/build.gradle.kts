@@ -22,8 +22,8 @@ android {
         minSdk = 26
         targetSdk = 35
         // 1.3.6：支持后端「优先原始 MP4 / HLS」下发的 CDN 直链播放/下载
-        versionCode = 12
-        versionName = "1.3.8"
+        versionCode = 13
+        versionName = "1.3.9"
         vectorDrawables { useSupportLibrary = true }
     }
 
