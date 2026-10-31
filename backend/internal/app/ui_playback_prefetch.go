@@ -223,10 +223,15 @@ func (app *UIApp) handlePlaybackPrefetch(writer http.ResponseWriter, request *ht
 		state, _ = session.native.state()
 	}
 	if !input.Cancel && state != "ended" {
+		app.downloader.recordDiagnostic(diagnosticEvent{Level: "info", Event: "playback.prefetch_rejected", Source: sourceFromDramaID(session.tasks[min(input.Episode, len(session.tasks))-1].DramaID),
+			DramaID: session.tasks[min(input.Episode, len(session.tasks))-1].DramaID, Episode: input.Episode,
+			Message: "当前集尚未缓冲完成 state=" + state})
 		app.playbackMu.Unlock()
 		writeJSON(writer, http.StatusConflict, map[string]string{"error": "当前集尚未缓冲完成"})
 		return
 	}
+	app.downloader.recordDiagnostic(diagnosticEvent{Level: "info", Event: "playback.prefetch", Source: sourceFromDramaID(session.tasks[input.Episode-1].DramaID),
+		DramaID: session.tasks[input.Episode-1].DramaID, Episode: input.Episode, Message: "开始预缓存下一集"})
 	session.prefetchVersion = input.Version
 	app.touchPlaybackLocked(session)
 	previous := session.prefetch

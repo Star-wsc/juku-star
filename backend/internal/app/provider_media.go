@@ -10,15 +10,16 @@ import (
 )
 
 type providerMedia struct {
-	URL      string
-	AudioURL string
-	Referer  string
-	Duration time.Duration
-	Playlist string
-	HLSKey   []byte
-	CENCKey  []byte
-	Quality  int
-	Variants []providerMedia
+	URL        string
+	AudioURL   string
+	Referer    string
+	Duration   time.Duration
+	Playlist   string
+	HLSKey     []byte
+	CENCKey    []byte
+	Quality    int
+	VideoCodec string
+	Variants   []providerMedia
 }
 
 func (d *Downloader) providerBaseURL(source string) string {

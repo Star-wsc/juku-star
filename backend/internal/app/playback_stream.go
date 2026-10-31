@@ -160,6 +160,10 @@ func (app *UIApp) preparePlaybackMedia(ctx context.Context, task Task, downloadI
 	var media providerMedia
 	var proxy *hlsProxy
 	if input == "" {
+		// 优先本地缓存原画 MP4：局域网直出，无需实时转码/解密。
+		if cachedMedia, cachedPath, cacheErr := app.downloader.ensurePlaybackCacheFile(ctx, task); cacheErr == nil {
+			return cachedMedia, cachedPath, nil, nil
+		}
 		var key []byte
 		var err error
 		media, key, err = app.downloader.resolvePlaybackMedia(ctx, task)

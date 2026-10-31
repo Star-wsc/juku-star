@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -49,6 +50,7 @@ type playbackNative struct {
 	ffmpeg     string
 	duration   float64
 	segments   map[int][]byte
+	initSegment []byte
 	bytes      int
 	wanted     int
 	job        *playbackNativeJob
@@ -88,7 +90,7 @@ func (cache *playbackNative) start() {
 			}
 			if err == nil {
 				cache.app.downloader.recordDiagnostic(diagnosticEvent{Level: "info", Event: "playback.mode", Source: sourceFromDramaID(cache.task.DramaID),
-					DramaID: cache.task.DramaID, DramaTitle: cache.task.DramaTitle, Episode: cache.task.Index, StartSeconds: cache.offset, Message: "native HLS transcode H.264/AAC"})
+					DramaID: cache.task.DramaID, DramaTitle: cache.task.DramaTitle, Episode: cache.task.Index, StartSeconds: cache.offset, Message: "native HLS cached remux"})
 			}
 			cache.mu.Lock()
 			cache.media, cache.input, cache.proxy = media, input, proxy
@@ -166,6 +168,12 @@ func (cache *playbackNative) startJobLocked(index int) {
 	if count := cache.segmentCountLocked(); count > 0 && job.end > count {
 		job.end = count
 	}
+	// 前台原画整集一次切完；预取仍按批，避免预取把整集做完。
+	if hongguoCodecRemuxSafe(cache.media.VideoCodec) && !cache.background {
+		if count := cache.segmentCountLocked(); count > 0 {
+			job.start, job.end = 0, count
+		}
+	}
 	cache.job = job
 	cache.workers.Add(1)
 	go func() {
@@ -202,13 +210,30 @@ func (cache *playbackNative) startJobLocked(index int) {
 }
 
 func playbackNativeArgs(media providerMedia, input, directory string, index, end int) []string {
-	offset := float64(index * playbackNativeSegmentSeconds)
-	args := playbackEncodingArgs(media, input, offset)
-	for i := 0; i+1 < len(args); i++ {
-		if args[i] == "-g" || args[i] == "-keyint_min" {
-			args[i+1] = strconv.Itoa(playbackNativeSegmentSeconds * 30)
-		}
+	// HEVC 用 fMP4（安卓硬解更稳）；H.264 仍走 MPEG-TS copy。
+	if hongguoCodecHevc(media.VideoCodec) {
+		args := append(playbackInputArgs(media, input, 0), "-c", "copy")
+		return append(args,
+			"-f", "hls", "-hls_time", strconv.Itoa(playbackNativeSegmentSeconds), "-hls_list_size", "0",
+			"-hls_segment_type", "fmp4", "-hls_fmp4_init_filename", "init.mp4",
+			"-hls_flags", "independent_segments", "-start_number", strconv.Itoa(index),
+			"-hls_segment_filename", filepath.Join(directory, "%06d.m4s"), filepath.Join(directory, "index.m3u8"))
 	}
+	if hongguoCodecRemuxSafe(media.VideoCodec) {
+		offset := float64(index * playbackNativeSegmentSeconds)
+		args := append(playbackInputArgs(media, input, 0), "-c", "copy")
+		if offset > 0 {
+			args = append(playbackInputArgs(media, input, offset), "-c", "copy")
+		}
+		return append(args, "-t", strconv.Itoa((end-index)*playbackNativeSegmentSeconds),
+			"-output_ts_offset", strconv.FormatFloat(offset, 'f', 3, 64),
+			"-f", "hls", "-hls_time", strconv.Itoa(playbackNativeSegmentSeconds), "-hls_list_size", "0", "-hls_segment_type", "mpegts",
+			"-hls_segment_options", "mpegts_flags=+initial_discontinuity",
+			"-hls_flags", "independent_segments", "-start_number", strconv.Itoa(index),
+			"-hls_segment_filename", filepath.Join(directory, "%06d.ts"), filepath.Join(directory, "index.m3u8"))
+	}
+	offset := float64(index * playbackNativeSegmentSeconds)
+	args := playbackNativeEncodeArgs(media, input, offset)
 	return append(args, "-t", strconv.Itoa((end-index)*playbackNativeSegmentSeconds),
 		"-output_ts_offset", strconv.FormatFloat(offset, 'f', 3, 64),
 		"-f", "hls", "-hls_time", strconv.Itoa(playbackNativeSegmentSeconds), "-hls_list_size", "0", "-hls_segment_type", "mpegts",
@@ -217,7 +242,50 @@ func playbackNativeArgs(media providerMedia, input, directory string, index, end
 		"-hls_segment_filename", filepath.Join(directory, "%06d.ts"), filepath.Join(directory, "index.m3u8"))
 }
 
+func hongguoCodecHevc(codec string) bool {
+	switch strings.ToLower(strings.TrimSpace(codec)) {
+	case "hevc", "h265", "bytevc1":
+		return true
+	default:
+		return false
+	}
+}
+
+func playbackNativeEncodeArgs(media providerMedia, input string, offset float64) []string {
+	args := playbackInputArgs(media, input, offset)
+	return append(args,
+		"-vf", "fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1",
+		"-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-profile:v", "baseline",
+		"-pix_fmt", "yuv420p", "-crf", "23", "-maxrate", "8000k", "-bufsize", "16000k", "-threads", "4",
+		"-g", "30", "-keyint_min", "30", "-sc_threshold", "0",
+		"-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2")
+}
+
+func playbackNativeTranscodeArgs(media providerMedia, input, directory string, index, end int) []string {
+	offset := float64(index * playbackNativeSegmentSeconds)
+	args := playbackNativeEncodeArgs(media, input, offset)
+	return append(args, "-t", strconv.Itoa((end-index)*playbackNativeSegmentSeconds),
+		"-output_ts_offset", strconv.FormatFloat(offset, 'f', 3, 64),
+		"-f", "hls", "-hls_time", strconv.Itoa(playbackNativeSegmentSeconds), "-hls_list_size", "0", "-hls_segment_type", "mpegts",
+		"-hls_segment_options", "mpegts_flags=+initial_discontinuity",
+		"-hls_flags", "independent_segments+temp_file", "-start_number", strconv.Itoa(index),
+		"-hls_segment_filename", filepath.Join(directory, "%06d.ts"), filepath.Join(directory, "index.m3u8"))
+}
+
+func hongguoCodecRemuxSafe(codec string) bool {
+	switch strings.ToLower(strings.TrimSpace(codec)) {
+	case "h264", "avc1", "hevc", "h265", "bytevc1":
+		return true
+	default:
+		return false
+	}
+}
+
 func (cache *playbackNative) render(job *playbackNativeJob) error {
+	return cache.renderOnce(job)
+}
+
+func (cache *playbackNative) renderOnce(job *playbackNativeJob) error {
 	if err := job.ctx.Err(); err != nil {
 		return err
 	}
@@ -248,7 +316,26 @@ func (cache *playbackNative) render(job *playbackNativeJob) error {
 	ticker := time.NewTicker(40 * time.Millisecond)
 	defer ticker.Stop()
 	next := job.start
+	ext := ".ts"
+	if hongguoCodecHevc(cache.media.VideoCodec) {
+		ext = ".m4s"
+	}
+	collectInit := func() {
+		initPath := filepath.Join(directory, "init.mp4")
+		body, err := os.ReadFile(initPath)
+		if err != nil || len(body) == 0 {
+			return
+		}
+		_ = os.Remove(initPath)
+		cache.mu.Lock()
+		if cache.initSegment == nil {
+			cache.initSegment = body
+			cache.bytes += len(body)
+		}
+		cache.mu.Unlock()
+	}
 	collect := func() error {
+		collectInit()
 		duration, _ := log.snapshot()
 		cache.mu.Lock()
 		if duration > 0 && cache.duration <= 0 {
@@ -256,9 +343,12 @@ func (cache *playbackNative) render(job *playbackNativeJob) error {
 		}
 		cache.mu.Unlock()
 		for next < job.end {
-			path := filepath.Join(directory, fmt.Sprintf("%06d.ts", next))
+			path := filepath.Join(directory, fmt.Sprintf("%06d", next)+ext)
 			info, err := os.Stat(path)
 			if os.IsNotExist(err) {
+				if _, tmpErr := os.Stat(path + ".tmp"); tmpErr == nil {
+					return nil
+				}
 				return nil
 			}
 			if err != nil {
@@ -293,17 +383,51 @@ func (cache *playbackNative) render(job *playbackNativeJob) error {
 			if err != nil {
 				return playbackStreamError(job.ctx, cache.proxy, log, cache.media, err, nil)
 			}
+			collectInit()
+			// 兜底：把目录里剩余分片全部收进来（含 temp_file 未及时改名的）
+			entries, _ := os.ReadDir(directory)
+			for _, entry := range entries {
+				name := entry.Name()
+				if !strings.HasSuffix(name, ext) && !strings.HasSuffix(name, ext+".tmp") {
+					continue
+				}
+				numText := strings.TrimSuffix(strings.TrimSuffix(name, ".tmp"), ext)
+				num, convErr := strconv.Atoi(numText)
+				if convErr != nil {
+					continue
+				}
+				path := filepath.Join(directory, name)
+				body, readErr := os.ReadFile(path)
+				if readErr != nil || len(body) == 0 {
+					continue
+				}
+				_ = os.Remove(path)
+				cache.mu.Lock()
+				if cache.segments[num] == nil {
+					cache.bytes += len(body)
+				} else {
+					cache.bytes += len(body) - len(cache.segments[num])
+				}
+				cache.segments[num] = body
+				cache.evictLocked(num)
+				cache.notifyLocked()
+				cache.mu.Unlock()
+				if num+1 > next {
+					next = num + 1
+				}
+			}
 			if err := collect(); err != nil {
 				return err
 			}
 			cache.mu.Lock()
-			count := cache.segmentCountLocked()
+			produced := len(cache.segments)
 			cache.mu.Unlock()
-			if count == 0 || next <= job.start {
-				return errors.New("未取得有效的播放时长或视频分片")
-			}
-			if next < job.end && next < count {
-				return errors.New("视频分片未完整生成，请重试播放")
+			if next <= job.start || produced == 0 {
+				detail := strings.TrimSpace(log.text.String())
+				if len(detail) > 200 {
+					detail = detail[len(detail)-200:]
+				}
+				return fmt.Errorf("未取得有效的播放时长或视频分片: %s", detail)
 			}
 			return nil
 		case <-ticker.C:
@@ -416,6 +540,16 @@ func (cache *playbackNative) state() (string, error) {
 		return "ended", nil
 	}
 	if len(cache.segments) > 0 {
+		// 前台整集切片完成即缓冲结束；预取批次只算部分缓存。
+		if !cache.background && cache.job != nil {
+			select {
+			case <-cache.job.done:
+				if count > 0 && len(cache.segments) >= count {
+					return "ended", nil
+				}
+			default:
+			}
+		}
 		return "streaming", nil
 	}
 	return "buffering", nil

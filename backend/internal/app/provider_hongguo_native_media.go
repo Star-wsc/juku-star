@@ -151,7 +151,7 @@ func selectHongguoAppMedia(model map[string]any) (providerMedia, error) {
 		if len(address) > 8192 || !isProviderHTTPMediaURL(address) {
 			continue
 		}
-		media := providerMedia{URL: address, Referer: "https://novel.snssdk.com/", Duration: time.Duration(duration * float64(time.Second))}
+		media := providerMedia{URL: address, Referer: "https://novel.snssdk.com/", Duration: time.Duration(duration * float64(time.Second)), VideoCodec: codec}
 		encryption := nestedMap(variant, "encrypt_info")
 		spade := mapString(encryption, "spade_a")
 		if spade != "" || encryption["encrypt"] == true || mapString(encryption, "encryption_method") == "cenc-aes-ctr" {

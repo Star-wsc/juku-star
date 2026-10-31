@@ -118,8 +118,14 @@ func (app *UIApp) handlePlaybackNativeAsset(writer http.ResponseWriter, request 
 			writeJSON(writer, http.StatusServiceUnavailable, map[string]string{"error": "播放列表尚未就绪"})
 			return
 		}
+		cache.mu.Lock()
+		hasInit := len(cache.initSegment) > 0
+		cache.mu.Unlock()
 		var playlist strings.Builder
-		fmt.Fprintf(&playlist, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-INDEPENDENT-SEGMENTS\n", playbackNativeSegmentSeconds)
+		fmt.Fprintf(&playlist, "#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-INDEPENDENT-SEGMENTS\n", playbackNativeSegmentSeconds)
+		if hasInit {
+			playlist.WriteString("#EXT-X-MAP:URI=\"segment.ts?session=" + url.QueryEscape(session.id) + "&run=" + url.QueryEscape(strconv.FormatUint(run, 10)) + "&init=1\"\n")
+		}
 		if cache.offset > 0 {
 			fmt.Fprintf(&playlist, "#EXT-X-START:TIME-OFFSET=%.3f,PRECISE=YES\n", cache.offset)
 		}
@@ -131,6 +137,18 @@ func (app *UIApp) handlePlaybackNativeAsset(writer http.ResponseWriter, request 
 		playlist.WriteString("#EXT-X-ENDLIST\n")
 		writer.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 		http.ServeContent(writer, request, "index.m3u8", time.Time{}, strings.NewReader(playlist.String()))
+		return
+	}
+	if query.Get("init") == "1" || strings.Contains(request.URL.RawQuery, "init=") {
+		cache.mu.Lock()
+		body := cache.initSegment
+		cache.mu.Unlock()
+		if len(body) == 0 {
+			writeJSON(writer, http.StatusNotFound, map[string]string{"error": "init segment missing"})
+			return
+		}
+		writer.Header().Set("Content-Type", "video/mp4")
+		http.ServeContent(writer, request, "init.mp4", time.Time{}, bytes.NewReader(body))
 		return
 	}
 	index, err := strconv.Atoi(query.Get("segment"))
@@ -146,6 +164,10 @@ func (app *UIApp) handlePlaybackNativeAsset(writer http.ResponseWriter, request 
 		writeJSON(writer, http.StatusBadGateway, map[string]string{"error": app.redactError(err)})
 		return
 	}
-	writer.Header().Set("Content-Type", "video/mp2t")
-	http.ServeContent(writer, request, "segment.ts", time.Time{}, bytes.NewReader(body))
+	if len(body) > 0 && body[0] == 0x47 {
+		writer.Header().Set("Content-Type", "video/mp2t")
+	} else {
+		writer.Header().Set("Content-Type", "video/mp4")
+	}
+	http.ServeContent(writer, request, "segment.bin", time.Time{}, bytes.NewReader(body))
 }
