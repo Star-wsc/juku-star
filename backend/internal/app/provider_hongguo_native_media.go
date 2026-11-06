@@ -61,21 +61,46 @@ func (downloader *Downloader) resolveHongguoOpenMedia(ctx context.Context, video
 		"need_all_video_definition": {"1"},
 	}
 	address := hongguoOpenAPIBase + "/reading/bookapi/video_tab/multi_video_model/v/?" + query.Encode()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
-	if err != nil {
-		return providerMedia{}, err
+	var content []byte
+	var status int
+	// 2026-11-06 起受保护档：签名必带；且会间歇 200+空正文，需多轮退避重试。
+	for attempt := 0; attempt < 4; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-time.After(time.Duration(attempt) * time.Second):
+			case <-ctx.Done():
+				return providerMedia{}, ctx.Err()
+			}
+		}
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+		if err != nil {
+			return providerMedia{}, err
+		}
+		request.Header.Set("User-Agent", hongguoAppUserAgent)
+		request.Header.Set("Accept", "application/json")
+		request.Header.Set("X-XS-From-Web", "0")
+		request.Header.Set("Sdk-Version", "2")
+		nonce, nonceErr := newHongguoCommentNonce()
+		if nonceErr != nil {
+			return providerMedia{}, errors.New("无法准备请求签名")
+		}
+		signHongguoCommentRequest(request, nonce, time.Now())
+		response, err := downloader.doCatalogRequestWithTimeout(request, 25*time.Second)
+		if err != nil {
+			if ctx.Err() != nil {
+				return providerMedia{}, err
+			}
+			continue
+		}
+		content, err = io.ReadAll(io.LimitReader(response.Body, providerMaxBodyBytes+1))
+		status = response.StatusCode
+		response.Body.Close()
+		if err == nil && status == http.StatusOK && len(content) > 0 && len(content) <= providerMaxBodyBytes {
+			break
+		}
 	}
-	response, err := downloader.doCatalogRequestWithTimeout(request, 25*time.Second)
-	if err != nil {
-		return providerMedia{}, err
-	}
-	defer response.Body.Close()
-	content, err := io.ReadAll(io.LimitReader(response.Body, providerMaxBodyBytes+1))
-	if err != nil {
-		return providerMedia{}, errors.New("读取 App 开放取流响应失败")
-	}
-	if response.StatusCode != http.StatusOK {
-		return providerMedia{}, fmt.Errorf(" App 开放取流 HTTP %d", response.StatusCode)
+	if status != http.StatusOK {
+		return providerMedia{}, fmt.Errorf(" App 开放取流 HTTP %d", status)
 	}
 	if len(content) == 0 || len(content) > providerMaxBodyBytes {
 		return providerMedia{}, errors.New(" App 开放取流返回空正文")
