@@ -8,10 +8,41 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 const playbackCacheDirName = "playback-cache"
+
+type hongguoMediaCacheEntry struct {
+	media    providerMedia
+	expireAt time.Time
+}
+
+// hongguoMediaCache 按分集缓存解析结果，避免并发把上游打成空包。
+type hongguoMediaCache struct {
+	mu    sync.Mutex
+	items map[string]hongguoMediaCacheEntry
+}
+
+func (c *hongguoMediaCache) get(id string) (providerMedia, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	entry, ok := c.items[id]
+	if !ok || time.Now().After(entry.expireAt) {
+		return providerMedia{}, false
+	}
+	return entry.media, true
+}
+
+func (c *hongguoMediaCache) put(id string, media providerMedia) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.items == nil {
+		c.items = map[string]hongguoMediaCacheEntry{}
+	}
+	c.items[id] = hongguoMediaCacheEntry{media: media, expireAt: time.Now().Add(10 * time.Minute)}
+}
 
 func (d *Downloader) playbackCacheDir() string {
 	return filepath.Join(d.cfg.dataDirectory(), playbackCacheDirName)

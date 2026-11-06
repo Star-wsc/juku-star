@@ -21,26 +21,17 @@ func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoI
 	if !hongguoNumericID.MatchString(videoID) {
 		return providerMedia{}, errors.New("视频 ID 无效")
 	}
-	if media, err := downloader.resolveHongguoOpenMedia(ctx, videoID); err == nil {
-		return media, nil
-	} else if ctx.Err() != nil {
-		return providerMedia{}, err
+	if cached, ok := downloader.hongguoMediaCache.get(videoID); ok {
+		return cached, nil
 	}
-	// 旧签名播放口（2026-10 起常回空包），仅作回退。
-	ctx = context.WithValue(ctx, hongguoModelSignKey{}, true)
-	payload := map[string]any{
-		"mixed_video_id_map": map[string][]string{"1004": {videoID}},
-		"biz_param": map[string]any{
-			"detail_page_version": 0, "device_level": 3, "disable_digg_stat": false,
-			"need_all_video_definition": true, "need_mp4_align": false,
-			"use_os_player": false, "use_server_dns": false, "video_platform": 1024,
-		},
-	}
-	result, err := downloader.hongguoAppRequest(ctx, http.MethodPost, "/novel/player/multi_video_model/v1/", nil, payload)
+	media, err := downloader.resolveHongguoOpenMedia(ctx, videoID)
 	if err != nil {
+		downloader.recordDiagnostic(diagnosticEvent{Level: "warn", Event: "provider.hongguo.open_media", Source: sourceHongguo,
+			Host: "api5-normal-sinfonlinec.fqnovel.com", Message: "open api failed: " + err.Error()})
 		return providerMedia{}, err
 	}
-	return parseHongguoAppPreloadMedia(result, videoID)
+	downloader.hongguoMediaCache.put(videoID, media)
+	return media, nil
 }
 
 // resolveHongguoOpenMedia 走无签名 bookapi 取流（与官方安卓一致，全集可播）。
@@ -64,10 +55,10 @@ func (downloader *Downloader) resolveHongguoOpenMedia(ctx context.Context, video
 	var content []byte
 	var status int
 	// 2026-11-06 起受保护档：签名必带；且会间歇 200+空正文，需多轮退避重试。
-	for attempt := 0; attempt < 4; attempt++ {
+	for attempt := 0; attempt < 3; attempt++ {
 		if attempt > 0 {
 			select {
-			case <-time.After(time.Duration(attempt) * time.Second):
+			case <-time.After(time.Duration(attempt*400) * time.Millisecond):
 			case <-ctx.Done():
 				return providerMedia{}, ctx.Err()
 			}
