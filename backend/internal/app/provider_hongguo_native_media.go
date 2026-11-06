@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -38,55 +37,60 @@ func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoI
 func (downloader *Downloader) resolveHongguoOpenMedia(ctx context.Context, videoID string) (providerMedia, error) {
 	client := downloader.hongguoClient()
 	client.mu.Lock()
-	deviceID := client.state.DeviceID
+	deviceID, installID := client.state.DeviceID, client.state.InstallID
 	client.mu.Unlock()
 	if deviceID == "" {
 		deviceID = newHongguoDeviceID()
 	}
-	query := url.Values{
-		"aid": {"8662"}, "device_id": {deviceID},
-		"version_code": {"74232"}, "update_version_code": {"74232"},
-		"device_platform": {"android"}, "os": {"android"},
-		"app_name": {"novelread"}, "channel": {"hongguo_baidu_pz_kaiping0105_android"},
-		"video_id": {videoID}, "video_platform": {"1024"},
-		"need_all_video_definition": {"1"},
+	if installID == "" {
+		installID = newHongguoDeviceID()
 	}
-	address := hongguoOpenAPIBase + "/reading/bookapi/video_tab/multi_video_model/v/?" + query.Encode()
+	// 与官方安卓配方一致：固定顺序 + 完整公共参数；网关对缺参/乱序会回 200+空正文。
+	query := hongguoOpenCommonParams(deviceID, installID, "74232") +
+		"&video_id=" + videoID +
+		"&video_platform=1024" +
+		"&need_all_video_definition=1"
+	address := hongguoOpenAPIBase + "/reading/bookapi/video_tab/multi_video_model/v/?" + query
 	var content []byte
 	var status int
-	// 2026-11-06 起受保护档：签名必带；且会间歇 200+空正文，需多轮退避重试。
-	for attempt := 0; attempt < 3; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-time.After(time.Duration(attempt*400) * time.Millisecond):
-			case <-ctx.Done():
-				return providerMedia{}, ctx.Err()
+	// 受保护档：旧版签名优先，空包时再试免签；每档内部退避重试。
+	for _, mode := range []string{"legacy", "none"} {
+		for attempt := 0; attempt < 4; attempt++ {
+			if attempt > 0 {
+				select {
+				case <-time.After(time.Duration(attempt) * time.Second):
+				case <-ctx.Done():
+					return providerMedia{}, ctx.Err()
+				}
 			}
-		}
-		request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
-		if err != nil {
-			return providerMedia{}, err
-		}
-		request.Header.Set("User-Agent", hongguoAppUserAgent)
-		request.Header.Set("Accept", "application/json")
-		request.Header.Set("X-XS-From-Web", "0")
-		request.Header.Set("Sdk-Version", "2")
-		nonce, nonceErr := newHongguoCommentNonce()
-		if nonceErr != nil {
-			return providerMedia{}, errors.New("无法准备请求签名")
-		}
-		signHongguoCommentRequest(request, nonce, time.Now())
-		response, err := downloader.doCatalogRequestWithTimeout(request, 25*time.Second)
-		if err != nil {
-			if ctx.Err() != nil {
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+			if err != nil {
 				return providerMedia{}, err
 			}
-			continue
+			request.Header.Set("User-Agent", hongguoAppUserAgent)
+			request.Header.Set("Accept", "application/json")
+			if mode == "legacy" {
+				nonce, nonceErr := newHongguoCommentNonce()
+				if nonceErr != nil {
+					return providerMedia{}, errors.New("无法准备请求签名")
+				}
+				signHongguoCommentRequest(request, nonce, time.Now())
+			}
+			response, err := downloader.doCatalogRequestWithTimeout(request, 25*time.Second)
+			if err != nil {
+				if ctx.Err() != nil {
+					return providerMedia{}, err
+				}
+				continue
+			}
+			content, err = io.ReadAll(io.LimitReader(response.Body, providerMaxBodyBytes+1))
+			status = response.StatusCode
+			response.Body.Close()
+			if err == nil && status == http.StatusOK && len(content) > 0 && len(content) <= providerMaxBodyBytes {
+				break
+			}
 		}
-		content, err = io.ReadAll(io.LimitReader(response.Body, providerMaxBodyBytes+1))
-		status = response.StatusCode
-		response.Body.Close()
-		if err == nil && status == http.StatusOK && len(content) > 0 && len(content) <= providerMaxBodyBytes {
+		if len(content) > 0 && status == http.StatusOK {
 			break
 		}
 	}
@@ -119,6 +123,31 @@ func (downloader *Downloader) resolveHongguoOpenMedia(ctx context.Context, video
 		return providerMedia{}, errors.New(" App 未返回所请求分集的播放信息")
 	}
 	return selectHongguoAppMedia(parsed)
+}
+
+// hongguoOpenCommonParams 与官方安卓 recipe 一致的固定顺序公共参数。
+func hongguoOpenCommonParams(deviceID, installID, versionCode string) string {
+	versionName := "6.5.5.32"
+	if versionCode == "74232" {
+		versionName = "7.4.2.32"
+	} else if versionCode == "73532" {
+		versionName = "7.3.5.32"
+	}
+	if len(deviceID) < 6 {
+		deviceID = "1234567890123456"
+	}
+	if len(installID) < 6 {
+		installID = "1234567890123456"
+	}
+	return "iid=" + installID + "&device_id=" + deviceID +
+		"&ac=wifi&channel=hongguo_baidu_pz_kaiping0105_android" +
+		"&aid=8662&app_name=novelread&version_code=" + versionCode + "&version_name=" + versionName +
+		"&device_platform=android&os=android&ssmix=a&device_type=Redmi+Note+8+Pro&device_brand=Redmi" +
+		"&language=zh&os_api=36&os_version=16&manifest_version_code=" + versionCode +
+		"&resolution=1080*2198&dpi=440&update_version_code=" + versionCode + "&pv_player=" + versionCode + "&gender=2" +
+		"&need_personal_recommend=1&player_so_load=1&is_android_pad_screen=0&host_abi=arm64-v8a" +
+		"&dragon_device_type=phone&rom_version=BP4A.251205.006+release-keys&compliance_status=0" +
+		"&cdid=1f1d14b3-8c25-4733-9f6b-2fdc01640081"
 }
 
 func parseHongguoAppPreloadMedia(result map[string]any, videoID string) (providerMedia, error) {
