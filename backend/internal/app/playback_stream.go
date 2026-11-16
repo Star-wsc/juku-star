@@ -144,8 +144,12 @@ func playbackFFmpegArgs(media providerMedia, input string, offset float64) []str
 	return append(playbackEncodingArgs(media, input, offset), "-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-frag_duration", "1000000", "-f", "mp4", "pipe:1")
 }
 
-func playbackRemuxArgs(media providerMedia, input string) []string {
-	return append(playbackInputArgs(media, input, 0), "-c", "copy", "-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-frag_duration", "1000000", "-f", "mp4", "pipe:1")
+func playbackRemuxArgs(media providerMedia, input string, offset float64) []string {
+	args := playbackInputArgs(media, input, 0)
+	if offset > 0 {
+		args = append(args, "-ss", strconv.FormatFloat(offset, 'f', 3, 64))
+	}
+	return append(args, "-c", "copy", "-movflags", "+frag_keyframe+empty_moov+default_base_moof", "-frag_duration", "1000000", "-f", "mp4", "pipe:1")
 }
 
 func (app *UIApp) preparePlaybackMedia(ctx context.Context, task Task, downloadID string) (providerMedia, string, *hlsProxy, error) {
@@ -205,7 +209,12 @@ func (app *UIApp) streamPlayback(ctx context.Context, cancel context.CancelFunc,
 		return err
 	}
 	remux, _ := ctx.Value(playbackRemuxKey{}).(bool)
-	remux = remux && offset == 0
+	// CENC/分离音轨一转码就会解坏 AAC，必须封装直通；普通媒体 seek 时才转码精确到帧。
+	if len(media.CENCKey) > 0 || media.AudioURL != "" {
+		remux = true
+	} else {
+		remux = remux && offset == 0
+	}
 	var process *playbackProcess
 	buffer := make([]byte, 64*1024)
 	var count int
@@ -213,7 +222,7 @@ func (app *UIApp) streamPlayback(ctx context.Context, cancel context.CancelFunc,
 	for {
 		args := playbackFFmpegArgs(media, input, offset)
 		if remux {
-			args = playbackRemuxArgs(media, input)
+			args = playbackRemuxArgs(media, input, offset)
 		}
 		if optional, _ := ctx.Value(playbackPrefetchKey{}).(bool); optional {
 			for index := 0; index+1 < len(args); index++ {

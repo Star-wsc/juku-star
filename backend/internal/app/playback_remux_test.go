@@ -157,7 +157,7 @@ func TestPlaybackRemuxCENCUsesDecryptedPackets(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	decodedKey, _ := hex.DecodeString(key)
-	process, err := startPlaybackProcess(ctx, ffmpeg, playbackRemuxArgs(providerMedia{CENCKey: decodedKey}, path))
+	process, err := startPlaybackProcess(ctx, ffmpeg, playbackRemuxArgs(providerMedia{CENCKey: decodedKey}, path, 0))
 	if err != nil {
 		t.Fatal(err)
 	}
