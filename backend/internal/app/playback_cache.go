@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -176,9 +177,88 @@ func (d *Downloader) evictPlaybackCacheLocked(extra int) {
 	}
 }
 
+// streamPlaybackMedia 解密后直接写入 w，同时落盘缓存；下载边下边解，不等整集。
+func (d *Downloader) streamPlaybackMedia(ctx context.Context, task Task, w interface{ Write([]byte) (int, error) }) (providerMedia, error) {
+	media, key, err := d.resolvePlaybackMedia(ctx, task)
+	if err != nil {
+		return media, err
+	}
+	media, err = d.selectPlaybackQuality(ctx, media)
+	if err != nil {
+		return media, err
+	}
+	if len(key) > 0 && len(media.CENCKey) == 0 {
+		media.CENCKey = key
+	}
+	if media.Playlist != "" || len(media.CENCKey) == 0 {
+		return media, errPlaybackCacheUnsupported
+	}
+	ffmpeg, err := d.ensureFFmpeg(ctx)
+	if err != nil {
+		return media, err
+	}
+	dir := d.playbackCacheDir()
+	_ = os.MkdirAll(dir, 0o755)
+	finalPath := filepath.Join(dir, playbackCacheFileName(task, media))
+	part := strings.TrimSuffix(finalPath, ".mp4") + ".stream.mp4"
+	_ = os.Remove(part)
+	args := []string{"-hide_banner", "-loglevel", "error", "-nostats", "-rw_timeout", "20000000",
+		"-protocol_whitelist", "http,https,tcp,tls,crypto,httpproxy"}
+	if len(media.CENCKey) > 0 {
+		args = append(args, "-decryption_key", fmt.Sprintf("%x", media.CENCKey))
+	}
+	if media.AudioURL != "" {
+		args = append(args, "-i", media.URL)
+		if len(media.CENCKey) > 0 {
+			args = append(args, "-decryption_key", fmt.Sprintf("%x", media.CENCKey))
+		}
+		args = append(args, "-i", media.AudioURL, "-map", "0:v:0", "-map", "1:a:0", "-c", "copy")
+	} else {
+		args = append(args, "-i", media.URL, "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy")
+	}
+	// 管道输出（无 faststart，客户端边收边写）；同时落盘便于复用。
+	args = append(args, "-f", "mp4", "pipe:1")
+	cmdCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	command := exec.CommandContext(cmdCtx, ffmpeg, args...)
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return media, err
+	}
+	command.Stderr = nil
+	if err := command.Start(); err != nil {
+		return media, err
+	}
+	file, _ := os.Create(part)
+	var writer io.Writer = w
+	if file != nil {
+		defer file.Close()
+		writer = io.MultiWriter(w, file)
+	}
+	_, copyErr := io.Copy(writer, stdout)
+	waitErr := command.Wait()
+	if file != nil {
+		file.Close()
+		if copyErr == nil && waitErr == nil {
+			_ = os.Rename(part, finalPath)
+		} else {
+			_ = os.Remove(part)
+		}
+	}
+	if copyErr != nil {
+		return media, copyErr
+	}
+	if waitErr != nil {
+		return media, fmt.Errorf("解密输出失败: %v", waitErr)
+	}
+	cached := media
+	cached.CENCKey = nil
+	return cached, nil
+}
+
 func (d *Downloader) playbackCacheLimitMB() int {
 	if settings := defaultPlaybackSettings(); settings.CacheMB > 0 {
 		return settings.CacheMB
 	}
-	return 512
+	return 2048
 }

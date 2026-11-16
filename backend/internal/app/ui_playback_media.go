@@ -146,12 +146,20 @@ func (app *UIApp) handlePlaybackMediaFile(writer http.ResponseWriter, request *h
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(request.Context(), 30*time.Minute)
 	defer cancel()
-	// 解密缓存命中则直接 ServeFile（支持 Range），下载与播放共用。
+	// 解密缓存命中则直接 ServeFile（支持 Range）；未命中先完整解密再传，保证文件可播。
 	if track == "video" {
 		if _, cachedPath, cacheErr := app.downloader.ensurePlaybackCacheFile(ctx, task); cacheErr == nil {
 			if ok, _ := existingGood(cachedPath, 1); ok {
+				// 后台预热下一集，缩短批量下载等待。
+				if next, ok := app.playbackTaskForEpisode(session, episode+1); ok {
+					go func(next Task) {
+						bg, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+						defer cancel()
+						_, _, _ = app.downloader.ensurePlaybackCacheFile(bg, next)
+					}(next)
+				}
 				writer.Header().Set("Content-Type", "video/mp4")
 				http.ServeFile(writer, request, cachedPath)
 				return
