@@ -26,13 +26,13 @@ func defaultPlaybackSettings() PlaybackSettings {
 	return PlaybackSettings{
 		Enabled:            true,
 		DirectSources:      []string{sourceHongguo},
-		MaxSessions:        4,
-		MaxMediaRequests:   32,
-		MaxRemuxJobs:       2,
-		MaxAudioTranscodes: 1,
-		MaxVideoTranscodes: 1,
-		MaxPrefetchJobs:    2,
-		CacheMB:            512,
+		MaxSessions:        256,
+		MaxMediaRequests:   64,
+		MaxRemuxJobs:       4,
+		MaxAudioTranscodes: 2,
+		MaxVideoTranscodes: 2,
+		MaxPrefetchJobs:    4,
+		CacheMB:            2048,
 		BackgroundPlayback: true,
 	}
 }
@@ -40,10 +40,10 @@ func defaultPlaybackSettings() PlaybackSettings {
 func (s PlaybackSettings) normalized() PlaybackSettings {
 	out := s
 	if out.MaxSessions <= 0 {
-		out.MaxSessions = 4
+		out.MaxSessions = 256
 	}
 	if out.MaxMediaRequests <= 0 {
-		out.MaxMediaRequests = 32
+		out.MaxMediaRequests = 64
 	}
 	if out.MaxRemuxJobs <= 0 {
 		out.MaxRemuxJobs = 2
