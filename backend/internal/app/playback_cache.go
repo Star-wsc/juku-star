@@ -22,13 +22,17 @@ type hongguoMediaCacheEntry struct {
 
 // hongguoMediaCache 按分集缓存解析结果，避免并发把上游打成空包。
 type hongguoMediaCache struct {
-	mu    sync.Mutex
-	items map[string]hongguoMediaCacheEntry
+	mu        sync.Mutex
+	items     map[string]hongguoMediaCacheEntry
+	failUntil map[string]time.Time
 }
 
 func (c *hongguoMediaCache) get(id string) (providerMedia, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if until, ok := c.failUntil[id]; ok && time.Now().Before(until) {
+		return providerMedia{}, false
+	}
 	entry, ok := c.items[id]
 	if !ok || time.Now().After(entry.expireAt) {
 		return providerMedia{}, false
@@ -44,6 +48,19 @@ func (c *hongguoMediaCache) put(id string, media providerMedia) {
 	}
 	c.items[id] = hongguoMediaCacheEntry{media: media, expireAt: time.Now().Add(10 * time.Minute)}
 }
+
+// fail 短暂记住失败，避免下载队列把上游打爆。
+func (c *hongguoMediaCache) fail(id string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.failUntil == nil {
+		c.failUntil = map[string]time.Time{}
+	}
+	c.failUntil[id] = time.Now().Add(5 * time.Second)
+}
+
+// playbackCacheGate 限制同时解密/取流的任务数，批量下载不会挤爆上游。
+var playbackCacheGate = make(chan struct{}, 2)
 
 func (d *Downloader) playbackCacheDir() string {
 	return filepath.Join(d.cfg.dataDirectory(), playbackCacheDirName)
@@ -61,7 +78,25 @@ func playbackCacheFileName(task Task, media providerMedia) string {
 
 // ensurePlaybackCacheFile 把本集解密为本地 MP4（原画 copy），供播放直出，避免实时转码。
 func (d *Downloader) ensurePlaybackCacheFile(ctx context.Context, task Task) (providerMedia, string, error) {
+	select {
+	case playbackCacheGate <- struct{}{}:
+		defer func() { <-playbackCacheGate }()
+	case <-ctx.Done():
+		return providerMedia{}, "", ctx.Err()
+	}
 	media, key, err := d.resolvePlaybackMedia(ctx, task)
+	// 取流被限流时多轮重试，下载任务可等 1 分钟。
+	for i := 0; err != nil && i < 3; i++ {
+		if ctx.Err() != nil {
+			break
+		}
+		select {
+		case <-time.After(time.Duration(5+i*5) * time.Second):
+		case <-ctx.Done():
+			return providerMedia{}, "", err
+		}
+		media, key, err = d.resolvePlaybackMedia(ctx, task)
+	}
 	if err != nil {
 		return providerMedia{}, "", err
 	}
@@ -80,7 +115,8 @@ func (d *Downloader) ensurePlaybackCacheFile(ctx context.Context, task Task) (pr
 		return media, "", err
 	}
 	path := filepath.Join(dir, playbackCacheFileName(task, media))
-	if ok, _ := existingGood(path, 1); ok {
+	// 小于 1MB 视为残片，重新解密。
+	if ok, _ := existingGood(path, 1<<20); ok {
 		d.evictPlaybackCacheLocked(0)
 		cached := media
 		cached.CENCKey = nil

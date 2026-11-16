@@ -155,6 +155,7 @@ type UITask struct {
 	CancelRequested     bool      `json:"cancelRequested,omitempty"`
 	RemoveRequested     bool      `json:"removeRequested,omitempty"`
 	PauseRequested      bool      `json:"pauseRequested,omitempty"`
+	RetryAfter          time.Time `json:"retryAfter,omitempty"`
 	Source              Task      `json:"task"`
 }
 
@@ -325,10 +326,14 @@ func (a *UIApp) worker() {
 			}
 			for _, id := range a.taskOrder {
 				candidate := a.tasks[id]
-				if candidate != nil && candidate.Status == uiStatusQueued {
-					task = candidate
-					break
+				if candidate == nil || candidate.Status != uiStatusQueued {
+					continue
 				}
+				if !candidate.RetryAfter.IsZero() && time.Now().Before(candidate.RetryAfter) {
+					continue
+				}
+				task = candidate
+				break
 			}
 			if task == nil && !a.closed {
 				a.cond.Wait()
@@ -400,14 +405,29 @@ func (a *UIApp) worker() {
 				current.Error = "已取消"
 				current.Phase = "canceled"
 			} else if err != nil {
-				current.Status = uiStatusFailed
-				current.Progress = 0
+				current.Error = a.redactError(err)
 				if errors.Is(err, context.DeadlineExceeded) {
 					current.Error = "下载任务超时，已自动失败，可稍后重试"
-				} else {
-					current.Error = a.redactError(err)
 				}
-				current.Phase = "failed"
+				// 取流限流/瞬时故障自动重试，最长约 8 次。
+				if current.Attempt < 8 && !strings.Contains(current.Error, "已取消") {
+					current.Status = uiStatusQueued
+					current.Progress = 0
+					current.Phase = "waiting-retry"
+					current.RetryAfter = time.Now().Add(time.Duration(current.Attempt*20) * time.Second)
+					go func(delay time.Duration) {
+						time.Sleep(delay)
+						a.mu.Lock()
+						if !a.closed {
+							a.cond.Broadcast()
+						}
+						a.mu.Unlock()
+					}(time.Duration(current.Attempt*20) * time.Second)
+				} else {
+					current.Status = uiStatusFailed
+					current.Progress = 0
+					current.Phase = "failed"
+				}
 			} else {
 				current.Status = uiStatusSuccess
 				current.Progress = 100

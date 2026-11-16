@@ -136,7 +136,16 @@ func hongguoCatalogHasMore(state *hongguoCatalogState) bool {
 	return false
 }
 
+// hongguoAppGate 串行化签名请求，避免批量下载把上游限流打成空包。
+var hongguoAppGate = make(chan struct{}, 1)
+
 func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, path string, extra url.Values, payload any) (map[string]any, error) {
+	select {
+	case hongguoAppGate <- struct{}{}:
+		defer func() { <-hongguoAppGate }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 	comment, _ := ctx.Value(hongguoCommentKey{}).(bool)
 	signed := !comment
 	var registerErr error
@@ -163,18 +172,19 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 		}
 	}
 	attempts := downloader.cfg.Retries
-	if attempts < 1 {
-		attempts = 1
+	if attempts < 5 {
+		attempts = 5
 	}
-	if attempts > 3 {
-		attempts = 3
+	if attempts > 8 {
+		attempts = 8
 	}
 	var lastErr error
 	rotations := 0
 	for attempt := 0; attempt < attempts; attempt++ {
 		if attempt > 0 {
+			// 上游对连续取流限流（200+空正文），退避 2/4/6/8… 秒。
 			select {
-			case <-time.After(time.Duration(attempt) * time.Second):
+			case <-time.After(time.Duration(attempt*2) * time.Second):
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
@@ -241,14 +251,13 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 			downloader.recordDiagnostic(diagnosticEvent{Level: "warn", Event: "provider.hongguo.app_response", Source: sourceHongguo,
 				Host: request.URL.Hostname(), TotalBytes: int64(len(content)), Message: path + ":" + message})
 			lastErr = errors.New(message)
-			// 空正文可能是设备号被上游判为无效，换一个已注册设备再试。
-			if signed && rotations < hongguoDeviceRotations {
+			// 空正文可能是设备被拒，最多换 1 次设备，避免批量下载把上游打爆。
+			if signed && rotations < 1 {
 				if registerErr = downloader.ensureHongguoDevice(ctx, deviceID); registerErr == nil {
 					rotations++
 					deviceID, installID, _ = downloader.hongguoDevice()
 					query.Set("device_id", deviceID)
 					query.Set("iid", installID)
-					attempt--
 					continue
 				}
 				lastErr = fmt.Errorf(" App 接口未返回有效数据（设备注册失败：%v）", registerErr)
