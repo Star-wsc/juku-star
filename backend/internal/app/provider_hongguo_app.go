@@ -28,24 +28,34 @@ type hongguoCatalogCursor struct {
 	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
+type hongguoDevice struct {
+	DeviceID  string `json:"deviceId"`
+	InstallID string `json:"installId"`
+}
+
 type hongguoCatalogState struct {
-	Version   int                             `json:"version"`
-	DeviceID  string                          `json:"deviceId"`
-	InstallID string                          `json:"installId"`
-	Feeds     map[string]hongguoCatalogCursor `json:"feeds"`
+	Version    int             `json:"version"`
+	DeviceID   string          `json:"deviceId"`
+	InstallID  string          `json:"installId"`
+	Registered bool            `json:"registered,omitempty"`
+	Devices    []hongguoDevice `json:"devices,omitempty"`
+	Feeds      map[string]hongguoCatalogCursor `json:"feeds"`
 }
 
 type hongguoAppClient struct {
-	mu             sync.Mutex
-	catalogMu      sync.Mutex
-	baseURL        string
-	state          hongguoCatalogState
-	details        map[string]hongguoDetailEntry
-	pending        map[string]*hongguoDetailCall
-	searches       map[string]hongguoSearchEntry
-	searchPending  map[string]*hongguoSearchCall
-	danmaku        map[string]hongguoDanmakuCacheEntry
-	danmakuPending map[string]*hongguoDanmakuCall
+	mu                  sync.Mutex
+	catalogMu           sync.Mutex
+	deviceMu            sync.Mutex
+	registerPausedUntil time.Time
+	registerPauseErr    error
+	baseURL             string
+	state               hongguoCatalogState
+	details             map[string]hongguoDetailEntry
+	pending             map[string]*hongguoDetailCall
+	searches            map[string]hongguoSearchEntry
+	searchPending       map[string]*hongguoSearchCall
+	danmaku             map[string]hongguoDanmakuCacheEntry
+	danmakuPending      map[string]*hongguoDanmakuCall
 }
 
 func (downloader *Downloader) hongguoClient() *hongguoAppClient {
@@ -56,6 +66,7 @@ func (downloader *Downloader) hongguoClient() *hongguoAppClient {
 			details: map[string]hongguoDetailEntry{}, pending: map[string]*hongguoDetailCall{},
 			searches: map[string]hongguoSearchEntry{}, searchPending: map[string]*hongguoSearchCall{},
 		}
+		downloader.restoreHongguoDevicePool(downloader.hongguo)
 	})
 	return downloader.hongguo
 }
@@ -126,17 +137,20 @@ func hongguoCatalogHasMore(state *hongguoCatalogState) bool {
 }
 
 func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, path string, extra url.Values, payload any) (map[string]any, error) {
+	comment, _ := ctx.Value(hongguoCommentKey{}).(bool)
+	signed := !comment
+	var registerErr error
+	if signed {
+		// 红果要求设备先注册，未注册的随机设备号会被判为无效并返回空正文。
+		if registerErr = downloader.ensureHongguoDevice(ctx, ""); registerErr != nil {
+			return nil, fmt.Errorf(" App 接口不可用（设备注册失败：%v）", registerErr)
+		}
+	}
 	client := downloader.hongguoClient()
 	client.mu.Lock()
 	base, deviceID, installID := client.baseURL, client.state.DeviceID, client.state.InstallID
 	client.mu.Unlock()
-	query := url.Values{
-		"aid": {"8662"}, "app_name": {"novelread"}, "version_code": {"73532"}, "version_name": {"7.3.5.32"},
-		"manifest_version_code": {"73532"}, "update_version_code": {"73532"}, "channel": {"update_64"},
-		"device_platform": {"android"}, "os": {"android"}, "ssmix": {"a"}, "device_type": {"25053RT47C"},
-		"device_brand": {"Redmi"}, "language": {"zh"}, "os_api": {"36"}, "os_version": {"16"},
-		"resolution": {"1280*2772"}, "dpi": {"520"}, "ac": {"wifi"}, "device_id": {deviceID}, "iid": {installID},
-	}
+	query := hongguoAppQuery(deviceID, installID)
 	for key, values := range extra {
 		query[key] = append([]string(nil), values...)
 	}
@@ -156,6 +170,7 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 		attempts = 3
 	}
 	var lastErr error
+	rotations := 0
 	for attempt := 0; attempt < attempts; attempt++ {
 		if attempt > 0 {
 			select {
@@ -164,7 +179,15 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 				return nil, ctx.Err()
 			}
 		}
-		request, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(base, "/")+path, bytes.NewReader(body))
+		address := strings.TrimRight(base, "/") + path
+		var commentNonce hongguoCommentNonce
+		if comment {
+			commentNonce, err = newHongguoCommentNonce()
+			if err != nil {
+				return nil, errors.New("无法准备请求签名")
+			}
+		}
+		request, err := http.NewRequestWithContext(ctx, method, address, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
 		}
@@ -172,19 +195,9 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 		request.Header.Set("Accept", "application/json")
 		request.Header.Set("X-XS-From-Web", "0")
 		request.Header.Set("Sdk-Version", "2")
-		comment, _ := ctx.Value(hongguoCommentKey{}).(bool)
-		modelSign, _ := ctx.Value(hongguoModelSignKey{}).(bool)
-		var legacyNonce hongguoCommentNonce
-		if !modelSign {
-			// 目录和详情接口使用带 X-Argus/X-Ladon 的旧版签名；评论接口额外携带评论头。
-			legacyNonce, err = newHongguoCommentNonce()
-			if err != nil {
-				return nil, errors.New("无法准备请求签名")
-			}
-			if comment {
-				request.Header.Set("Comment-Source", "601")
-				request.Header.Set("Server-Channel", "1000")
-			}
+		if comment {
+			request.Header.Set("Comment-Source", "601")
+			request.Header.Set("Server-Channel", "1000")
 		}
 		if payload != nil {
 			request.Header.Set("Content-Type", "application/json; charset=utf-8")
@@ -193,10 +206,10 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 			now := time.Now()
 			query.Set("_rticket", strconv.FormatInt(now.UnixMilli(), 10))
 			prepared.URL.RawQuery = query.Encode()
-			if modelSign {
-				signHongguoModelRequest(prepared, body, now)
+			if comment {
+				signHongguoCommentRequest(prepared, commentNonce, now)
 			} else {
-				signHongguoCommentRequest(prepared, legacyNonce, now)
+				signHongguoPlayerRequest(prepared, body, now)
 			}
 		})
 		if err != nil {
@@ -227,7 +240,20 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 			}
 			downloader.recordDiagnostic(diagnosticEvent{Level: "warn", Event: "provider.hongguo.app_response", Source: sourceHongguo,
 				Host: request.URL.Hostname(), TotalBytes: int64(len(content)), Message: path + ":" + message})
-			return nil, errors.New(message)
+			lastErr = errors.New(message)
+			// 空正文可能是设备号被上游判为无效，换一个已注册设备再试。
+			if signed && rotations < hongguoDeviceRotations {
+				if registerErr = downloader.ensureHongguoDevice(ctx, deviceID); registerErr == nil {
+					rotations++
+					deviceID, installID, _ = downloader.hongguoDevice()
+					query.Set("device_id", deviceID)
+					query.Set("iid", installID)
+					attempt--
+					continue
+				}
+				lastErr = fmt.Errorf(" App 接口未返回有效数据（设备注册失败：%v）", registerErr)
+			}
+			continue
 		}
 		var result map[string]any
 		decoder := json.NewDecoder(bytes.NewReader(content))

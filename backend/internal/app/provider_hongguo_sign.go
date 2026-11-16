@@ -13,17 +13,8 @@ import (
 	"time"
 )
 
-// hongguoModelSignKey 标记播放模型接口，该接口使用新版 X-Gorgon 签名；
-// 详情、目录等接口仍使用带 X-Argus/X-Ladon 的旧版签名。
+// hongguoModelSignKey 保留兼容；取流已改用播放器签名。
 type hongguoModelSignKey struct{}
-
-func newHongguoDeviceID() string {
-	var random [8]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		return strconv.FormatInt(time.Now().UnixNano(), 10)
-	}
-	return strconv.FormatUint(1_000_000_000_000_000_000+binary.BigEndian.Uint64(random[:])%8_000_000_000_000_000_000, 10)
-}
 
 // hongguoModelGorgon 生成新版播放接口的 X-Gorgon。参数必须与实际发送的
 // RawQuery 和请求体完全一致，签名对字节级内容敏感。
