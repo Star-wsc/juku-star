@@ -148,6 +148,16 @@ func (app *UIApp) handlePlaybackMediaFile(writer http.ResponseWriter, request *h
 
 	ctx, cancel := context.WithTimeout(request.Context(), 30*time.Second)
 	defer cancel()
+	// 解密缓存命中则直接 ServeFile（支持 Range），下载与播放共用。
+	if track == "video" {
+		if _, cachedPath, cacheErr := app.downloader.ensurePlaybackCacheFile(ctx, task); cacheErr == nil {
+			if ok, _ := existingGood(cachedPath, 1); ok {
+				writer.Header().Set("Content-Type", "video/mp4")
+				http.ServeFile(writer, request, cachedPath)
+				return
+			}
+		}
+	}
 	media, resolveErr := app.resolvePlaybackMediaForPlan(ctx, task)
 	settings := app.playbackSettings()
 	source := canonicalProviderSource(firstNonEmpty(sourceFromDramaID(task.DramaID), task.Chapter.Source))
@@ -277,6 +287,39 @@ func (app *UIApp) tryOriginalPlaybackOpen(request *http.Request, sessionID strin
 		if ok, _ := existingGood(task.OutPath, 1); ok {
 			return nil, false
 		}
+	}
+
+	cacheCtx, cacheCancel := context.WithTimeout(request.Context(), 30*time.Second)
+	defer cacheCancel()
+	// 优先解密缓存整文件：下载/播放都走直链，避免 HLS 分片拼接与转码。
+	if cachedMedia, cachedPath, cacheErr := app.downloader.ensurePlaybackCacheFile(cacheCtx, task); cacheErr == nil {
+		app.playbackMu.Lock()
+		live := app.playbacks[sessionID]
+		if live == nil || live.run != session.run {
+			app.playbackMu.Unlock()
+			return nil, false
+		}
+		app.touchPlaybackLocked(session)
+		run := session.run
+		app.playbackMu.Unlock()
+		app.downloader.recordDiagnostic(diagnosticEvent{
+			Level: "info", Event: "playback.mode", Source: sourceFromDramaID(task.DramaID),
+			DramaID: task.DramaID, DramaTitle: task.DramaTitle, Episode: task.Index,
+			Message: "cached direct " + filepath.Base(cachedPath),
+		})
+		_ = cachedMedia
+		return map[string]any{
+			"url":        app.playbackMediaGatewayURL(sessionID, episode, "video", version),
+			"run":        run,
+			"duration":   cachedMedia.Duration.Seconds(),
+			"source":     "local",
+			"quality":    firstNonEmptyQuality(quality, cachedMedia.Quality),
+			"qualities":  playbackQualityOptions(cachedMedia),
+			"prefetched": false,
+			"mimeType":   "video/mp4",
+			"mode":       playbackModeCompatibleOriginal,
+			"planMode":   playbackModeCompatibleOriginal,
+		}, true
 	}
 
 	var media providerMedia
