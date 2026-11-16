@@ -97,7 +97,7 @@ func (app *UIApp) playbackMediaGatewayURL(session string, episode int, track str
 	if version > 0 {
 		query.Set("version", strconv.FormatUint(version, 10))
 	}
-	return "/api/ui/playback/media/file?" + query.Encode()
+	return "/api/ui/playback/media/file/episode.mp4?" + query.Encode()
 }
 
 // handlePlaybackMediaFile 网关：本地文件直出，远端可 302 或反代。

@@ -71,6 +71,7 @@ func (app *UIApp) registerPlaybackRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/ui/playback/settings", app.handlePlaybackSettings)
 	mux.HandleFunc("/api/ui/playback/media/open", app.handlePlaybackMediaOpen)
 	mux.HandleFunc("/api/ui/playback/media/file", app.handlePlaybackMediaFile)
+	mux.HandleFunc("/api/ui/playback/media/file/", app.handlePlaybackMediaFile)
 	mux.HandleFunc("/api/ui/playback/stream", app.handlePlaybackStream)
 	mux.HandleFunc("/api/ui/playback/hls/open", app.handlePlaybackNativeOpen)
 	mux.HandleFunc("/api/ui/playback/hls/index.m3u8", app.handlePlaybackNativeAsset)
