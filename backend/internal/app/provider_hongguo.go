@@ -203,7 +203,8 @@ func (d *Downloader) resolveHongguoMedia(ctx context.Context, task Task) (provid
 	if !hongguoNumericID.MatchString(videoID) || !hongguoNumericID.MatchString(seriesID) {
 		return providerMedia{}, fmt.Errorf("红果章节 ID 无效，请重新获取章节")
 	}
-	media, nativeErr := d.resolveHongguoAppMedia(ctx, videoID)
+	// 先快速试 App（1 次），避免限流时空转十几秒；失败立刻走网页。
+	media, nativeErr := d.resolveHongguoAppMediaQuick(ctx, videoID)
 	if nativeErr == nil {
 		return media, nil
 	}
@@ -212,6 +213,14 @@ func (d *Downloader) resolveHongguoMedia(ctx context.Context, task Task) (provid
 	}
 	media, pageErr := d.resolveHongguoWebMedia(ctx, seriesID, videoID)
 	if pageErr == nil {
+		return media, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return providerMedia{}, err
+	}
+	// 网页试看以外的集，再用完整重试打 App。
+	media, nativeErr = d.resolveHongguoAppMedia(ctx, videoID)
+	if nativeErr == nil {
 		return media, nil
 	}
 	if err := ctx.Err(); err != nil {

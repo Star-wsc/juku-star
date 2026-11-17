@@ -52,6 +52,27 @@ func hongguoEmptyWait(ctx context.Context) error {
 	}
 }
 
+// resolveHongguoAppMediaQuick 只试一次，用于快速起播；失败即让调用方切网页口。
+func (downloader *Downloader) resolveHongguoAppMediaQuick(ctx context.Context, videoID string) (providerMedia, error) {
+	if cached, ok := downloader.hongguoMediaCache.get(videoID); ok {
+		return cached, nil
+	}
+	payload := map[string]any{
+		"video_id": videoID, "content_type": 1,
+		"biz_param": map[string]any{"need_all_video_definition": true, "video_platform": 3},
+	}
+	result, err := downloader.hongguoAppRequestN(ctx, http.MethodPost, "/novel/player/video_model/v1/", nil, payload, 1)
+	if err != nil {
+		return providerMedia{}, err
+	}
+	media, err := parseHongguoAppVideoModel(result, videoID)
+	if err != nil {
+		return providerMedia{}, err
+	}
+	downloader.hongguoMediaCache.put(videoID, media)
+	return media, nil
+}
+
 func (downloader *Downloader) resolveHongguoAppMedia(ctx context.Context, videoID string) (providerMedia, error) {
 	if !hongguoNumericID.MatchString(videoID) {
 		return providerMedia{}, errors.New("视频 ID 无效")

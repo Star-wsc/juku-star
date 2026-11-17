@@ -140,6 +140,10 @@ func hongguoCatalogHasMore(state *hongguoCatalogState) bool {
 var hongguoAppGate = make(chan struct{}, 1)
 
 func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, path string, extra url.Values, payload any) (map[string]any, error) {
+	return downloader.hongguoAppRequestN(ctx, method, path, extra, payload, 0)
+}
+
+func (downloader *Downloader) hongguoAppRequestN(ctx context.Context, method, path string, extra url.Values, payload any, maxAttempts int) (map[string]any, error) {
 	select {
 	case hongguoAppGate <- struct{}{}:
 		defer func() { <-hongguoAppGate }()
@@ -177,6 +181,9 @@ func (downloader *Downloader) hongguoAppRequest(ctx context.Context, method, pat
 	}
 	if attempts > 8 {
 		attempts = 8
+	}
+	if maxAttempts > 0 && maxAttempts < attempts {
+		attempts = maxAttempts
 	}
 	var lastErr error
 	rotations := 0
